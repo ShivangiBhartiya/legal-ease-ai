@@ -1,6 +1,8 @@
+import React from "react";
 
 
-function App() {
+export default function App(){
+  return (
+    <h1 className="text-4xl text-blue-500 font-bold">hello</h1>
+  )
 }
-
-export default App
