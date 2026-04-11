@@ -1,11 +1,11 @@
 import { useState } from "react";
-import heroBg from "../assets/hero-bg.png";
+import { useTheme } from "../App";
 
 const ENQUIRY_TYPES = ["General Question", "Partnership", "Bug Report", "Feedback"];
 
 function FieldError({ message }) {
   if (!message) return null;
-  return <p className="text-xs text-red-400 mt-1">{message}</p>;
+  return <p style={{ fontSize: "0.7rem", color: "#f87171", marginTop: "4px" }}>{message}</p>;
 }
 
 export default function Contact() {
@@ -13,6 +13,35 @@ export default function Contact() {
   const [errors, setErrors] = useState({});
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  // ── Theme tokens ───────────────────────────────────
+  const cardBg = isDark ? "rgba(20,20,22,0.82)" : "rgba(255,255,255,0.88)";
+  const cardBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const textMain = isDark ? "#f0f0f0" : "#111111";
+  const textSub = isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)";
+  const textMuted = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.22)";
+  const labelColor = isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.28)";
+  const inputBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)";
+  const inputBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+  const inputText = isDark ? "#e8e8e8" : "#1a1a1a";
+  const btnBg = isDark ? "#f0f0f0" : "#111111";
+  const btnText = isDark ? "#111111" : "#f0f0f0";
+
+  const inputStyle = (hasError) => ({
+    width: "100%",
+    background: inputBg,
+    border: `1px solid ${hasError ? "rgba(248,113,113,0.5)" : inputBorder}`,
+    borderRadius: "12px",
+    padding: "0.75rem 1rem",
+    fontSize: "0.875rem",
+    color: inputText,
+    outline: "none",
+    fontFamily: "inherit",
+    boxSizing: "border-box",
+    transition: "border-color 0.25s, background 0.4s",
+  });
 
   const validate = () => {
     const e = {};
@@ -28,95 +57,171 @@ export default function Contact() {
     if (Object.keys(e).length > 0) { setErrors(e); return; }
     setErrors({});
     setSubmitting(true);
-    // Replace with real submission
     setTimeout(() => { setSubmitting(false); setSent(true); }, 1500);
   };
 
-  const inputBase =
-    "w-full bg-gray-50 border rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all";
-
   return (
-    <main className="relative min-h-screen bg-white overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})`, opacity: 0.4 }}
-      />
+    <main style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
+      <section style={{
+        position: "relative",
+        zIndex: 1,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6rem 1.5rem 4rem",
+      }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "640px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: "1.25rem",
+        }}>
 
-      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16">
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center gap-5">
-
-          <h1
-            className="font-serif font-bold text-gray-900 leading-tight"
-            style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
-          >
+          <h1 style={{
+            fontFamily: "Georgia, serif",
+            fontWeight: 700,
+            color: textMain,
+            lineHeight: 1.15,
+            fontSize: "clamp(2rem, 4vw, 3rem)",
+            letterSpacing: "-0.025em",
+            transition: "color 0.4s ease",
+          }}>
             Contact
           </h1>
 
-          <p className="text-gray-400 text-base font-sans font-normal">
+          <p style={{
+            color: textSub,
+            fontSize: "0.9375rem",
+            maxWidth: "380px",
+            lineHeight: 1.6,
+          }}>
             Questions, feedback, or partnership enquiries — we read everything
           </p>
 
-          <div className="w-full mt-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl p-8 shadow-sm text-left space-y-5">
-
+          {/* Form card */}
+          <div style={{
+            width: "100%",
+            background: cardBg,
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "20px",
+            padding: "2rem",
+            boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.4)" : "0 8px 40px rgba(0,0,0,0.06)",
+            textAlign: "left",
+            transition: "background 0.4s ease",
+          }}>
             {sent ? (
-              <div className="text-center py-8 space-y-3">
-                {/* Success checkmark */}
-                <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center mx-auto">
-                  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div style={{ textAlign: "center", padding: "2.5rem 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+                <div style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  background: isDark ? "rgba(52,211,153,0.1)" : "rgba(16,185,129,0.08)",
+                  border: "1px solid rgba(52,211,153,0.3)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  <svg width="20" height="20" fill="none" stroke="#34d399" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="font-serif text-2xl font-semibold text-gray-900">Message Sent!</p>
-                <p className="text-sm text-gray-400">We'll get back to you within 24 hours.</p>
+                <p style={{ fontFamily: "Georgia, serif", fontSize: "1.5rem", fontWeight: 600, color: textMain }}>
+                  Message Sent!
+                </p>
+                <p style={{ fontSize: "0.875rem", color: textSub }}>
+                  We'll get back to you within 24 hours.
+                </p>
                 <button
                   onClick={() => { setSent(false); setForm({ name: "", email: "", enquiry: "", message: "" }); }}
-                  className="mt-4 text-xs text-gray-400 hover:text-gray-600 underline underline-offset-2 transition-colors"
+                  style={{
+                    marginTop: "0.5rem",
+                    fontSize: "0.75rem",
+                    color: textMuted,
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    textUnderlineOffset: "3px",
+                    padding: 0,
+                  }}
                 >
                   Send another message
                 </button>
               </div>
             ) : (
-              <>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.125rem" }}>
                 {/* Name + Email row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-gray-400 uppercase tracking-wide">Your Name</label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.875rem" }}
+                  className="contact-grid"
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                    <label style={{ fontSize: "0.675rem", color: labelColor, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                      Your Name
+                    </label>
                     <input
                       type="text"
-                      placeholder="Jane Smith"
+                      placeholder="Your Name"
                       value={form.name}
                       onChange={(e) => { setForm({ ...form, name: e.target.value }); setErrors({ ...errors, name: "" }); }}
-                      className={`${inputBase} ${errors.name ? "border-red-300" : "border-gray-200"}`}
+                      style={inputStyle(errors.name)}
+                      onFocus={(e) => (e.target.style.borderColor = isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.28)")}
+                      onBlur={(e) => (e.target.style.borderColor = errors.name ? "rgba(248,113,113,0.5)" : inputBorder)}
                     />
                     <FieldError message={errors.name} />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <label className="text-xs text-gray-400 uppercase tracking-wide">Email Address</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                    <label style={{ fontSize: "0.675rem", color: labelColor, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                      Email Address
+                    </label>
                     <input
                       type="email"
-                      placeholder="jane@example.com"
+                      placeholder="Your Email"
                       value={form.email}
                       onChange={(e) => { setForm({ ...form, email: e.target.value }); setErrors({ ...errors, email: "" }); }}
-                      className={`${inputBase} ${errors.email ? "border-red-300" : "border-gray-200"}`}
+                      style={inputStyle(errors.email)}
+                      onFocus={(e) => (e.target.style.borderColor = isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.28)")}
+                      onBlur={(e) => (e.target.style.borderColor = errors.email ? "rgba(248,113,113,0.5)" : inputBorder)}
                     />
                     <FieldError message={errors.email} />
                   </div>
                 </div>
 
                 {/* Enquiry type */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 uppercase tracking-wide">Enquiry Type <span className="text-gray-300">(optional)</span></label>
-                  <div className="flex flex-wrap gap-2">
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  <label style={{ fontSize: "0.675rem", color: labelColor, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                    Enquiry Type <span style={{ color: textMuted, textTransform: "none", letterSpacing: 0 }}>(optional)</span>
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
                     {ENQUIRY_TYPES.map((type) => (
                       <button
                         key={type}
                         onClick={() => setForm({ ...form, enquiry: form.enquiry === type ? "" : type })}
-                        className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                          form.enquiry === type
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-400"
-                        }`}
+                        style={{
+                          fontSize: "0.75rem",
+                          padding: "0.375rem 0.875rem",
+                          borderRadius: "8px",
+                          border: `1px solid ${
+                            form.enquiry === type
+                              ? (isDark ? "rgba(240,240,240,0.3)" : "rgba(17,17,17,0.3)")
+                              : inputBorder
+                          }`,
+                          background: form.enquiry === type
+                            ? (isDark ? "rgba(240,240,240,0.1)" : "rgba(17,17,17,0.06)")
+                            : inputBg,
+                          color: form.enquiry === type ? textMain : labelColor,
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          fontWeight: form.enquiry === type ? 600 : 400,
+                        }}
                       >
                         {type}
                       </button>
@@ -125,28 +230,56 @@ export default function Contact() {
                 </div>
 
                 {/* Message */}
-                <div className="space-y-1.5">
-                  <label className="text-xs text-gray-400 uppercase tracking-wide">Message</label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                  <label style={{ fontSize: "0.675rem", color: labelColor, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                    Message
+                  </label>
                   <textarea
                     rows={5}
                     placeholder="How can we help?"
                     value={form.message}
                     onChange={(e) => { setForm({ ...form, message: e.target.value }); setErrors({ ...errors, message: "" }); }}
-                    className={`${inputBase} resize-none ${errors.message ? "border-red-300" : "border-gray-200"}`}
+                    style={{
+                      ...inputStyle(errors.message),
+                      resize: "none",
+                      lineHeight: 1.65,
+                    }}
+                    onFocus={(e) => (e.target.style.borderColor = isDark ? "rgba(255,255,255,0.28)" : "rgba(0,0,0,0.28)")}
+                    onBlur={(e) => (e.target.style.borderColor = errors.message ? "rgba(248,113,113,0.5)" : inputBorder)}
                   />
                   <FieldError message={errors.message} />
                 </div>
 
+                {/* Submit */}
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="w-full py-3 bg-gray-900 hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+                  style={{
+                    width: "100%",
+                    padding: "0.8rem",
+                    borderRadius: "12px",
+                    fontWeight: 600,
+                    fontSize: "0.875rem",
+                    letterSpacing: "0.015em",
+                    border: "none",
+                    cursor: submitting ? "not-allowed" : "pointer",
+                    opacity: submitting ? 0.5 : 1,
+                    background: btnBg,
+                    color: btnText,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "0.5rem",
+                    transition: "opacity 0.25s",
+                  }}
+                  onMouseEnter={(e) => !submitting && (e.currentTarget.style.opacity = "0.8")}
+                  onMouseLeave={(e) => (e.currentTarget.style.opacity = submitting ? "0.5" : "1")}
                 >
                   {submitting ? (
                     <>
-                      <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      <svg style={{ animation: "spin 1s linear infinite", width: "15px", height: "15px" }} fill="none" viewBox="0 0 24 24">
+                        <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                       </svg>
                       Sending…
                     </>
@@ -154,11 +287,23 @@ export default function Contact() {
                     "Send Message"
                   )}
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>
       </section>
+
+      <style>{`
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @media (max-width: 520px) {
+          .contact-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }

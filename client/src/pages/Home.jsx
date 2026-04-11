@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import heroBg from "../assets/hero-bg.png";
+import { useTheme } from "../App";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -7,9 +7,28 @@ export default function Home() {
   const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
 
   const charLimit = 5000;
   const hasInput = text.trim() || fileName;
+
+  // ── Theme tokens ───────────────────────────────────
+  const cardBg = isDark ? "rgba(20,20,22,0.82)" : "rgba(255,255,255,0.88)";
+  const cardBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const textMain = isDark ? "#f0f0f0" : "#111111";
+  const textSub = isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)";
+  const textMuted = isDark ? "rgba(255,255,255,0.22)" : "rgba(0,0,0,0.22)";
+  const inputBg = isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)";
+  const inputBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+  const inputText = isDark ? "#e8e8e8" : "#1a1a1a";
+  const inputPlaceholder = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)";
+  const dividerColor = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)";
+  const btnBg = isDark ? "#f0f0f0" : "#111111";
+  const btnText = isDark ? "#111111" : "#f0f0f0";
+  const badgeBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)";
+  const badgeBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
+  const badgeText = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.4)";
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -32,7 +51,6 @@ export default function Home() {
   const handleAnalyze = () => {
     if (!hasInput) return;
     setLoading(true);
-    // Simulate loading; replace with real AI call
     setTimeout(() => {
       setLoading(false);
       alert("Connect your AI handler here.");
@@ -40,59 +58,147 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen bg-white overflow-hidden">
-      {/* Background */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})`, opacity: 0.4 }}
-      />
-
-      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16">
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center gap-5">
+    <main style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
+      <section style={{
+        position: "relative",
+        zIndex: 1,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6rem 1.5rem 4rem",
+      }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "640px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: "1.1rem",
+        }}>
 
           {/* Badge */}
-          <span className="inline-flex items-center gap-1.5 bg-gray-900/5 border border-gray-200 text-gray-500 text-xs font-medium px-3 py-1 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.375rem",
+            background: badgeBg,
+            border: `1px solid ${badgeBorder}`,
+            color: badgeText,
+            fontSize: "0.7rem",
+            fontWeight: 500,
+            padding: "0.3rem 0.875rem",
+            borderRadius: "999px",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}>
+            <span style={{
+              width: "6px", height: "6px", borderRadius: "50%",
+              backgroundColor: "#10b981",
+              animation: "pulse-dot 2s infinite",
+              display: "inline-block",
+            }} />
             AI-powered analysis
           </span>
 
-          <h1
-            className="font-serif font-bold text-gray-900 leading-tight"
-            style={{ fontSize: "clamp(1.6rem, 3.2vw, 2.6rem)" }}
-          >
-            Understand Legal Documents<br className="hidden sm:block" /> in Seconds
+          {/* Heading */}
+          <h1 style={{
+            fontFamily: "Georgia, serif",
+            fontWeight: 700,
+            color: textMain,
+            lineHeight: 1.15,
+            fontSize: "clamp(1.6rem, 3.5vw, 2.7rem)",
+            letterSpacing: "-0.025em",
+            margin: "0.25rem 0 0",
+            transition: "color 0.4s ease",
+          }}>
+            Understand Legal Documents<br />
+            <span style={{ opacity: 0.7 }}>in Seconds</span>
           </h1>
 
-          <p className="text-gray-400 text-base font-sans font-normal">
-            No jargon. Just clear legal explanations powered by AI
+          <p style={{
+            color: textSub,
+            fontSize: "0.9375rem",
+            fontWeight: 400,
+            maxWidth: "400px",
+            lineHeight: 1.6,
+            transition: "color 0.4s ease",
+          }}>
+            No jargon. Just clear legal explanations powered by AI.
           </p>
 
-          {/* Input card */}
-          <div className="w-full mt-4 bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl p-6 shadow-sm text-left space-y-4">
+          {/* Card */}
+          <div style={{
+            width: "100%",
+            marginTop: "1rem",
+            background: cardBg,
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "20px",
+            padding: "1.75rem",
+            boxShadow: isDark
+              ? "0 24px 64px rgba(0,0,0,0.4)"
+              : "0 8px 40px rgba(0,0,0,0.06)",
+            textAlign: "left",
+            display: "flex",
+            flexDirection: "column",
+            gap: "1rem",
+            transition: "background 0.4s ease, border-color 0.4s ease",
+          }}>
 
-            {/* Textarea with char counter */}
-            <div className="relative">
+            {/* Textarea */}
+            <div style={{ position: "relative" }}>
               <textarea
                 value={text}
                 onChange={(e) => e.target.value.length <= charLimit && setText(e.target.value)}
                 rows={7}
                 placeholder="Paste your legal text here…"
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-gray-300 focus:border-transparent transition-all leading-relaxed font-sans"
+                style={{
+                  width: "100%",
+                  background: inputBg,
+                  border: `1px solid ${inputBorder}`,
+                  borderRadius: "12px",
+                  padding: "0.875rem 1rem",
+                  fontSize: "0.875rem",
+                  color: inputText,
+                  resize: "none",
+                  outline: "none",
+                  fontFamily: "inherit",
+                  lineHeight: 1.65,
+                  boxSizing: "border-box",
+                  transition: "border-color 0.25s, background 0.4s",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = isDark ? "rgba(255,255,255,0.25)" : "rgba(0,0,0,0.25)")}
+                onBlur={(e) => (e.target.style.borderColor = inputBorder)}
               />
-              <span
-                className={`absolute bottom-3 right-3 text-xs tabular-nums pointer-events-none ${
-                  text.length > charLimit * 0.9 ? "text-amber-500" : "text-gray-300"
-                }`}
-              >
+              {/* Placeholder color workaround via style tag */}
+              <style>{`textarea::placeholder { color: ${inputPlaceholder}; }`}</style>
+              <span style={{
+                position: "absolute",
+                bottom: "12px",
+                right: "12px",
+                fontSize: "0.7rem",
+                color: text.length > charLimit * 0.9
+                  ? "#f59e0b"
+                  : textMuted,
+                pointerEvents: "none",
+                fontVariantNumeric: "tabular-nums",
+              }}>
                 {text.length}/{charLimit}
               </span>
             </div>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-gray-400 tracking-wide">or upload a file</span>
-              <div className="flex-1 h-px bg-gray-200" />
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <div style={{ flex: 1, height: "1px", background: dividerColor }} />
+              <span style={{ fontSize: "0.7rem", color: textMuted, letterSpacing: "0.04em" }}>
+                or upload a file
+              </span>
+              <div style={{ flex: 1, height: "1px", background: dividerColor }} />
             </div>
 
             {/* Drop zone */}
@@ -101,42 +207,75 @@ export default function Home() {
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
               onClick={() => !fileName && fileInputRef.current?.click()}
-              className={`rounded-xl border-2 border-dashed px-6 py-4 flex items-center justify-between gap-3 transition-colors ${
-                fileName
-                  ? "border-gray-300 bg-gray-50 cursor-default"
-                  : dragging
-                  ? "border-gray-500 bg-gray-50 cursor-copy"
-                  : "border-gray-200 hover:border-gray-400 hover:bg-gray-50 cursor-pointer"
-              }`}
+              style={{
+                borderRadius: "12px",
+                border: `2px dashed ${
+                  fileName
+                    ? (isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.15)")
+                    : dragging
+                    ? (isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)")
+                    : (isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)")
+                }`,
+                padding: "1rem 1.25rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                cursor: fileName ? "default" : "pointer",
+                background: dragging ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)") : "transparent",
+                transition: "border-color 0.2s, background 0.2s",
+              }}
             >
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.doc,.docx,.txt"
-                className="hidden"
+                style={{ display: "none" }}
                 onChange={handleFileChange}
               />
-
-              <div className="flex items-center gap-3 min-w-0">
-                <svg className="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", minWidth: 0 }}>
+                <svg width="18" height="18" fill="none" stroke={textSub} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                     d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
                 </svg>
                 {fileName ? (
-                  <p className="text-sm text-gray-700 font-medium truncate">{fileName}</p>
+                  <p style={{ fontSize: "0.875rem", color: inputText, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {fileName}
+                  </p>
                 ) : (
-                  <p className="text-sm text-gray-400">
-                    <span className="text-gray-700 font-medium">Upload your PDF here</span>
-                    &nbsp;— or drag &amp; drop
+                  <p style={{ fontSize: "0.875rem", color: textMuted }}>
+                    <span style={{ color: inputText, fontWeight: 500 }}>Upload your PDF here</span>
+                    {" "}— or drag &amp; drop
                   </p>
                 )}
               </div>
-
-              {/* Remove file button */}
               {fileName && (
                 <button
                   onClick={handleRemoveFile}
-                  className="shrink-0 w-6 h-6 rounded-full bg-gray-200 hover:bg-red-100 hover:text-red-500 text-gray-400 flex items-center justify-center transition-colors text-xs font-bold"
+                  style={{
+                    flexShrink: 0,
+                    width: "22px",
+                    height: "22px",
+                    borderRadius: "50%",
+                    background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)",
+                    border: "none",
+                    color: textSub,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    transition: "background 0.2s, color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(239,68,68,0.15)";
+                    e.currentTarget.style.color = "#ef4444";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
+                    e.currentTarget.style.color = textSub;
+                  }}
                   title="Remove file"
                 >
                   ✕
@@ -144,22 +283,40 @@ export default function Home() {
               )}
             </div>
 
-            {/* Accepted formats hint */}
-            <p className="text-xs text-gray-300 -mt-1">Accepted: PDF, DOC, DOCX, TXT</p>
+            <p style={{ fontSize: "0.7rem", color: textMuted, marginTop: "-0.25rem" }}>
+              Accepted: PDF, DOC, DOCX, TXT
+            </p>
 
             {/* CTA */}
             <button
               onClick={handleAnalyze}
               disabled={!hasInput || loading}
-              className="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2
-                bg-gray-900 text-white hover:bg-gray-700
-                disabled:opacity-30 disabled:cursor-not-allowed"
+              style={{
+                width: "100%",
+                padding: "0.8rem",
+                borderRadius: "12px",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                letterSpacing: "0.015em",
+                border: "none",
+                cursor: hasInput && !loading ? "pointer" : "not-allowed",
+                opacity: !hasInput || loading ? 0.3 : 1,
+                background: btnBg,
+                color: btnText,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                transition: "opacity 0.25s, transform 0.15s",
+              }}
+              onMouseEnter={(e) => hasInput && !loading && (e.currentTarget.style.opacity = "0.82")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = !hasInput || loading ? "0.3" : "1")}
             >
               {loading ? (
                 <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  <svg style={{ animation: "spin 1s linear infinite", width: "15px", height: "15px" }} fill="none" viewBox="0 0 24 24">
+                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                   Analysing…
                 </>
@@ -167,15 +324,25 @@ export default function Home() {
                 "Analyse Document"
               )}
             </button>
-
           </div>
 
           {/* Trust line */}
-          <p className="text-xs text-gray-300 mt-1">
+          <p style={{ fontSize: "0.7rem", color: textMuted, marginTop: "0.25rem" }}>
             Your document is never stored. Analysis happens in real time.
           </p>
         </div>
       </section>
+
+      <style>{`
+        @keyframes pulse-dot {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </main>
   );
 }

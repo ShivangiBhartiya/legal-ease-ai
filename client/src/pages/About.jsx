@@ -1,4 +1,4 @@
-import heroBg from "../assets/hero-bg.png";
+import { useTheme } from "../App";
 
 const stats = [
   { value: "10k+", label: "Documents Analyzed", icon: "📄" },
@@ -12,56 +12,148 @@ const problemItems = [
   "T&Cs that sign away your IP by default",
 ];
 
+const fixItems = [
+  "Plain-English summaries of every clause",
+  "Risk flags with severity levels",
+  "Negotiation suggestions you can actually use",
+];
+
 export default function About() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
+  const cardBg = isDark ? "rgba(20,20,22,0.82)" : "rgba(255,255,255,0.88)";
+  const cardBorder = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+  const textMain = isDark ? "#f0f0f0" : "#111111";
+  const textSub = isDark ? "rgba(255,255,255,0.38)" : "rgba(0,0,0,0.38)";
+  const textBody = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+  const dividerColor = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+
   return (
-    <main className="relative min-h-screen bg-white overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})`, opacity: 0.4 }}
-      />
+    <main style={{ position: "relative", minHeight: "100vh", overflow: "hidden" }}>
+      <section style={{
+        position: "relative",
+        zIndex: 1,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "6rem 1.5rem 4rem",
+      }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "640px",
+          margin: "0 auto",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: "1.25rem",
+        }}>
 
-      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-16">
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center text-center gap-5">
-
-          <h1
-            className="font-serif font-bold text-gray-900 leading-tight"
-            style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
-          >
+          <h1 style={{
+            fontFamily: "Georgia, serif",
+            fontWeight: 700,
+            color: textMain,
+            lineHeight: 1.15,
+            fontSize: "clamp(2rem, 4vw, 3rem)",
+            letterSpacing: "-0.025em",
+            transition: "color 0.4s ease",
+          }}>
             About Us
           </h1>
 
-          <p className="text-gray-400 text-base font-sans font-normal">
+          <p style={{
+            color: textSub,
+            fontSize: "0.9375rem",
+            maxWidth: "380px",
+            lineHeight: 1.6,
+            transition: "color 0.4s ease",
+          }}>
             Built for people who don't have lawyers
           </p>
 
-          {/* Stats row — pulled out of the card, given prominence */}
-          <div className="w-full grid grid-cols-3 gap-3 mt-2">
+          {/* Stats */}
+          <div style={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "0.75rem",
+            marginTop: "0.5rem",
+          }}>
             {stats.map((s) => (
-              <div key={s.label} className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl p-4 text-center shadow-sm">
-                <span className="text-xl mb-1 block">{s.icon}</span>
-                <p className="font-serif text-2xl font-bold text-gray-900">{s.value}</p>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mt-1 leading-tight">{s.label}</p>
+              <div key={s.label} style={{
+                background: cardBg,
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                border: `1px solid ${cardBorder}`,
+                borderRadius: "16px",
+                padding: "1.125rem 0.75rem",
+                textAlign: "center",
+                boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.35)" : "0 4px 20px rgba(0,0,0,0.05)",
+                transition: "background 0.4s ease",
+              }}>
+                <span style={{ fontSize: "1.25rem", display: "block", marginBottom: "0.375rem" }}>{s.icon}</span>
+                <p style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 700,
+                  color: textMain,
+                  lineHeight: 1,
+                  marginBottom: "0.3rem",
+                }}>
+                  {s.value}
+                </p>
+                <p style={{
+                  fontSize: "0.65rem",
+                  color: textSub,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  lineHeight: 1.3,
+                }}>
+                  {s.label}
+                </p>
               </div>
             ))}
           </div>
 
           {/* Content card */}
-          <div className="w-full bg-white/90 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm text-left overflow-hidden">
+          <div style={{
+            width: "100%",
+            background: cardBg,
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: `1px solid ${cardBorder}`,
+            borderRadius: "20px",
+            overflow: "hidden",
+            boxShadow: isDark ? "0 24px 64px rgba(0,0,0,0.4)" : "0 8px 40px rgba(0,0,0,0.06)",
+            textAlign: "left",
+            transition: "background 0.4s ease",
+          }}>
 
             {/* The Problem */}
-            <div className="p-8 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-5 rounded-full bg-red-400 block" />
-                <h2 className="font-serif text-xl font-semibold text-gray-900">The Problem</h2>
+            <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                <span style={{ width: "5px", height: "20px", borderRadius: "999px", background: "#f87171", display: "block" }} />
+                <h2 style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "1.125rem",
+                  fontWeight: 600,
+                  color: textMain,
+                  margin: 0,
+                }}>
+                  The Problem
+                </h2>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p style={{ fontSize: "0.875rem", color: textBody, lineHeight: 1.7, margin: 0 }}>
                 Most students and first-jobbers sign documents they've never truly understood.
                 Without a lawyer, you're signing blind.
               </p>
-              <ul className="space-y-2">
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.625rem" }}>
                 {problemItems.map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-gray-500">
-                    <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <li key={item} style={{ display: "flex", alignItems: "flex-start", gap: "0.625rem", fontSize: "0.875rem", color: textBody }}>
+                    <svg width="15" height="15" fill="none" stroke="#f87171" viewBox="0 0 24 24" style={{ marginTop: "2px", flexShrink: 0 }}>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                     {item}
@@ -70,26 +162,30 @@ export default function About() {
               </ul>
             </div>
 
-            <div className="h-px bg-gray-100" />
+            <div style={{ height: "1px", background: dividerColor }} />
 
             {/* Our Fix */}
-            <div className="p-8 space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-5 rounded-full bg-emerald-400 block" />
-                <h2 className="font-serif text-xl font-semibold text-gray-900">Our Fix</h2>
+            <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.625rem" }}>
+                <span style={{ width: "5px", height: "20px", borderRadius: "999px", background: "#34d399", display: "block" }} />
+                <h2 style={{
+                  fontFamily: "Georgia, serif",
+                  fontSize: "1.125rem",
+                  fontWeight: 600,
+                  color: textMain,
+                  margin: 0,
+                }}>
+                  Our Fix
+                </h2>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed">
+              <p style={{ fontSize: "0.875rem", color: textBody, lineHeight: 1.7, margin: 0 }}>
                 Legal case uses AI to translate legalese into plain English, flag risky clauses,
                 tell you what you're actually agreeing to, and suggest what to negotiate — in seconds.
               </p>
-              <ul className="space-y-2">
-                {[
-                  "Plain-English summaries of every clause",
-                  "Risk flags with severity levels",
-                  "Negotiation suggestions you can actually use",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-gray-500">
-                    <svg className="w-4 h-4 text-emerald-500 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                {fixItems.map((item) => (
+                  <li key={item} style={{ display: "flex", alignItems: "flex-start", gap: "0.625rem", fontSize: "0.875rem", color: textBody }}>
+                    <svg width="15" height="15" fill="none" stroke="#34d399" viewBox="0 0 24 24" style={{ marginTop: "2px", flexShrink: 0 }}>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {item}
@@ -97,13 +193,22 @@ export default function About() {
                 ))}
               </ul>
             </div>
-
           </div>
 
-          {/* CTA nudge */}
+          {/* CTA */}
           <a
             href="/"
-            className="mt-2 text-sm text-gray-900 font-semibold underline underline-offset-4 hover:text-gray-600 transition-colors"
+            style={{
+              marginTop: "0.5rem",
+              fontSize: "0.875rem",
+              color: textMain,
+              fontWeight: 600,
+              textDecoration: "underline",
+              textUnderlineOffset: "4px",
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.55")}
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
           >
             Try it free — no account needed →
           </a>
