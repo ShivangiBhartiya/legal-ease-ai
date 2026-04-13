@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useTokens } from "../App";
+import WaitlistForm from "../components/WaitlistForm";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -250,6 +251,9 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      {/* ── Waitlist Section ── */}
+      <WaitlistForm />
     </main>
   );
 }
