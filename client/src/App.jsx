@@ -6,155 +6,261 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 
-// ── Theme Context ──────────────────────────────────────────────
 export const ThemeContext = createContext(null);
+export function useTheme() { return useContext(ThemeContext); }
 
-export function useTheme() {
-  return useContext(ThemeContext);
-}
-
-// ── Animated Dot Background ────────────────────────────────────
+// ── Dot Background ──────────────────────────────────────────────
 function DotBackground() {
   const { theme } = useTheme();
-
+  const isDark = theme === "dark";
   return (
-    <div
-      className="dot-background"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: "none",
-        overflow: "hidden",
-      }}
-    >
-      <canvas id="dot-canvas" style={{ width: "100%", height: "100%", display: "block" }} />
+    <div style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: "-15%", right: "-5%", width: "55vw", height: "55vw", borderRadius: "50%", background: isDark ? "radial-gradient(circle, rgba(180,140,40,0.07) 0%, transparent 65%)" : "radial-gradient(circle, rgba(180,140,40,0.13) 0%, transparent 65%)", animation: "floatA 20s ease-in-out infinite" }}/>
+      <div style={{ position: "absolute", bottom: "0%", left: "-10%", width: "45vw", height: "45vw", borderRadius: "50%", background: isDark ? "radial-gradient(circle, rgba(100,100,100,0.08) 0%, transparent 65%)" : "radial-gradient(circle, rgba(140,100,40,0.08) 0%, transparent 65%)", animation: "floatB 25s ease-in-out infinite" }}/>
+      <div style={{ position: "absolute", top: "45%", left: "35%", width: "38vw", height: "38vw", borderRadius: "50%", background: isDark ? "radial-gradient(circle, rgba(60,50,20,0.06) 0%, transparent 65%)" : "radial-gradient(circle, rgba(200,160,60,0.06) 0%, transparent 65%)", animation: "floatC 30s ease-in-out infinite" }}/>
+      <canvas id="dot-canvas" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} />
       <style>{`
-        #dot-canvas {
-          position: absolute;
-          inset: 0;
-          width: 100%;
-          height: 100%;
-        }
+        @keyframes floatA { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(3%,5%) scale(1.05)} 66%{transform:translate(-2%,2%) scale(0.97)} }
+        @keyframes floatB { 0%,100%{transform:translate(0,0)} 40%{transform:translate(5%,-4%)} 75%{transform:translate(-3%,3%)} }
+        @keyframes floatC { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-6%,6%)} }
       `}</style>
     </div>
   );
 }
 
-// ── Dot Canvas Animation ───────────────────────────────────────
 function useDotCanvas(theme) {
   useEffect(() => {
     const canvas = document.getElementById("dot-canvas");
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-
-    const DOT_SPACING = 28;
-    const DOT_RADIUS = 1.2;
-    const MOUSE_RADIUS = 120;
-    const WAVE_SPEED = 0.0012;
-
-    let mouse = { x: -999, y: -999 };
-    let animId;
-    let t = 0;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
+    const SPACING = 22, RADIUS = 1.1, MOUSE_R = 130;
+    let mouse = { x: -9999, y: -9999 }, animId, t = 0;
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     resize();
     window.addEventListener("resize", resize);
-
-    const onMove = (e) => {
-      const evt = e.touches ? e.touches[0] : e;
-      mouse.x = evt.clientX;
-      mouse.y = evt.clientY;
-    };
-    const onLeave = () => { mouse = { x: -999, y: -999 }; };
+    const onMove = (e) => { const ev = e.touches?.[0] || e; mouse.x = ev.clientX; mouse.y = ev.clientY; };
+    const onLeave = () => { mouse = { x: -9999, y: -9999 }; };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("touchmove", onMove, { passive: true });
     window.addEventListener("mouseleave", onLeave);
-
     const draw = () => {
-      t += 1;
+      t++;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       const isDark = theme === "dark";
-      const baseDotColor = isDark ? "rgba(255,255,255," : "rgba(0,0,0,";
-
-      const cols = Math.ceil(canvas.width / DOT_SPACING) + 1;
-      const rows = Math.ceil(canvas.height / DOT_SPACING) + 1;
-
+      const baseR = isDark ? 255 : 130, baseG = isDark ? 255 : 100, baseB = isDark ? 255 : 40;
+      const cols = Math.ceil(canvas.width / SPACING) + 1, rows = Math.ceil(canvas.height / SPACING) + 1;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const x = c * DOT_SPACING;
-          const y = r * DOT_SPACING;
-
-          const dx = x - mouse.x;
-          const dy = y - mouse.y;
+          const x = c * SPACING, y = r * SPACING;
+          const dx = x - mouse.x, dy = y - mouse.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-
-          // Wave ripple
-          const wave = Math.sin((x + y) * 0.018 - t * WAVE_SPEED * 60) * 0.5 + 0.5;
-
-          // Mouse proximity boost
-          const proximity = dist < MOUSE_RADIUS ? 1 - dist / MOUSE_RADIUS : 0;
-          const alpha = Math.min(0.06 + wave * 0.08 + proximity * 0.55, 0.9);
-
-          // Mouse push-away offset
+          const wave = Math.sin((x + y) * 0.016 - t * 0.07) * 0.5 + 0.5;
+          const prox = dist < MOUSE_R ? 1 - dist / MOUSE_R : 0;
+          const alpha = Math.min(0.08 + wave * 0.1 + prox * 0.6, 0.92);
           let ox = 0, oy = 0;
-          if (proximity > 0) {
-            const angle = Math.atan2(dy, dx);
-            const push = proximity * 6;
-            ox = Math.cos(angle) * push;
-            oy = Math.sin(angle) * push;
-          }
-
-          const radius = DOT_RADIUS + proximity * 2.5;
-
-          ctx.beginPath();
-          ctx.arc(x + ox, y + oy, radius, 0, Math.PI * 2);
-          ctx.fillStyle = `${baseDotColor}${alpha.toFixed(3)})`;
-          ctx.fill();
+          if (prox > 0) { const ang = Math.atan2(dy, dx); const push = prox * 8; ox = Math.cos(ang) * push; oy = Math.sin(ang) * push; }
+          const rad = RADIUS + prox * 2.8;
+          ctx.beginPath(); ctx.arc(x + ox, y + oy, rad, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${baseR},${baseG},${baseB},${alpha.toFixed(3)})`; ctx.fill();
         }
       }
-
       animId = requestAnimationFrame(draw);
     };
-
     draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("touchmove", onMove);
-      window.removeEventListener("mouseleave", onLeave);
-    };
+    return () => { cancelAnimationFrame(animId); window.removeEventListener("resize", resize); window.removeEventListener("mousemove", onMove); window.removeEventListener("touchmove", onMove); window.removeEventListener("mouseleave", onLeave); };
   }, [theme]);
 }
 
-// ── App Shell ──────────────────────────────────────────────────
+// ── Lawyer SVG icon (female lawyer with gown + collar bands) ───
+function LawyerIcon({ size = 30, isDark }) {
+  const fill = isDark ? "#c9a84c" : "#1a160c";
+  const bg = isDark ? "rgba(201,168,76,0.18)" : "rgba(26,22,12,0.12)";
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Gown body */}
+      <path d="M15 100 C15 72 28 62 50 58 C72 62 85 72 85 100Z" fill={fill}/>
+      {/* Collar bands (two white strips) */}
+      <rect x="43" y="59" width="6" height="14" rx="1.5" fill={isDark ? "#0e0e0f" : "#f9f7f4"}/>
+      <rect x="51" y="59" width="6" height="14" rx="1.5" fill={isDark ? "#0e0e0f" : "#f9f7f4"}/>
+      {/* Collar bow knot */}
+      <path d="M40 60 L50 65 L60 60 L50 57Z" fill={fill}/>
+      {/* Neck */}
+      <rect x="44" y="48" width="12" height="12" rx="4" fill={isDark ? "#d4a96a" : "#c8845c"}/>
+      {/* Head */}
+      <ellipse cx="50" cy="34" rx="16" ry="18" fill={isDark ? "#d4a96a" : "#c8845c"}/>
+      {/* Hair — long, covering sides */}
+      <path d="M34 28 C30 20 32 8 50 6 C68 8 70 20 66 28 C66 42 62 54 62 54 L38 54 C38 54 34 42 34 28Z" fill={fill}/>
+      {/* Face cutout */}
+      <ellipse cx="50" cy="35" rx="11" ry="13" fill={isDark ? "#d4a96a" : "#c8845c"}/>
+      {/* Hair side cover */}
+      <path d="M34 28 C32 35 33 46 36 52 L38 54 C38 54 36 44 36 34Z" fill={fill}/>
+      <path d="M66 28 C68 35 67 46 64 52 L62 54 C62 54 64 44 64 34Z" fill={fill}/>
+    </svg>
+  );
+}
+
+// ── AI Lawyer Button ────────────────────────────────────────────
+function AILawyerBtn({ onOpen }) {
+  const tk = useTokens();
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div style={{ position: "fixed", bottom: "2rem", right: "2rem", zIndex: 9999 }}>
+      {/* Tooltip */}
+      <div style={{
+        position: "absolute", bottom: "calc(100% + 0.75rem)", right: 0,
+        background: tk.isDark ? "rgba(22,20,18,0.97)" : "rgba(255,254,252,0.97)",
+        border: `1px solid ${tk.goldBorder}`, borderRadius: "12px",
+        padding: "0.5rem 0.875rem",
+        boxShadow: tk.isDark ? "0 8px 32px rgba(0,0,0,0.5)" : "0 8px 24px rgba(0,0,0,0.12)",
+        backdropFilter: "blur(20px)", whiteSpace: "nowrap",
+        fontFamily: "'Cormorant Garamond', Georgia, serif",
+        fontSize: "0.8125rem", color: tk.textSecondary,
+        pointerEvents: "none",
+        opacity: hovered ? 1 : 0,
+        transform: hovered ? "translateY(0)" : "translateY(6px)",
+        transition: "opacity 0.2s ease, transform 0.2s ease",
+      }}>
+        <span style={{ color: tk.gold, fontWeight: 600 }}>Your AI Lawyer</span>{" — "}here to help
+        <div style={{ position: "absolute", bottom: "-5px", right: "18px", width: "10px", height: "10px", background: tk.isDark ? "rgba(22,20,18,0.97)" : "rgba(255,254,252,0.97)", border: `1px solid ${tk.goldBorder}`, borderTop: "none", borderLeft: "none", transform: "rotate(45deg)", borderRadius: "0 0 2px 0" }}/>
+      </div>
+      {/* Button */}
+      <button
+        onClick={onOpen}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          width: "54px", height: "54px", borderRadius: "50%",
+          background: tk.isDark
+            ? "linear-gradient(135deg, #c9a84c 0%, #8a6520 100%)"
+            : "linear-gradient(135deg, #1a160c 0%, #3a2a14 100%)",
+          border: `2px solid ${tk.goldBorder}`,
+          cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: hovered
+            ? (tk.isDark ? "0 0 0 8px rgba(201,168,76,0.15), 0 12px 32px rgba(0,0,0,0.5)" : "0 0 0 8px rgba(26,22,12,0.1), 0 12px 32px rgba(0,0,0,0.25)")
+            : (tk.isDark ? "0 4px 20px rgba(0,0,0,0.5)" : "0 4px 20px rgba(0,0,0,0.18)"),
+          transform: hovered ? "scale(1.1)" : "scale(1)",
+          transition: "all 0.25s cubic-bezier(.34,1.56,.64,1)",
+          padding: 0,
+        }}
+      >
+        <LawyerIcon size={30} isDark={tk.isDark} />
+      </button>
+    </div>
+  );
+}
+
+// ── How It Works Overlay ────────────────────────────────────────
+function HowItWorksOverlay({ onClose }) {
+  const tk = useTokens();
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 10000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: tk.isDark ? "rgba(0,0,0,0.75)" : "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}/>
+      <div style={{
+        position: "relative", width: "100%", maxWidth: "640px", maxHeight: "90vh", overflowY: "auto",
+        background: tk.isDark ? "rgba(14,14,12,0.98)" : "rgba(253,251,248,0.98)",
+        border: `1px solid ${tk.goldBorder}`, borderRadius: "24px", padding: "2.5rem",
+        boxShadow: tk.isDark ? "0 40px 120px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,220,100,0.08)" : "0 40px 120px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.9)",
+        animation: "overlayIn 0.35s cubic-bezier(.22,1,.36,1)",
+      }}>
+        <style>{`@keyframes overlayIn { from{opacity:0;transform:translateY(24px) scale(.97)} to{opacity:1;transform:none} }`}</style>
+        <button onClick={onClose} style={{ position: "absolute", top: "1.25rem", left: "1.25rem", display: "flex", alignItems: "center", gap: "0.375rem", background: tk.goldLight, border: `1px solid ${tk.goldBorder}`, borderRadius: "8px", padding: "0.375rem 0.75rem", fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.8125rem", fontWeight: 600, color: tk.gold, cursor: "pointer", transition: "all 0.2s" }}
+          onMouseEnter={e => { e.currentTarget.style.background = tk.isDark ? "rgba(201,168,76,0.2)" : "rgba(160,120,40,0.15)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background = tk.goldLight; }}>
+          ← Back
+        </button>
+        <div style={{ paddingTop: "2rem" }}>
+          <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem" }}>
+              <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: tk.goldLight, border: `2px solid ${tk.goldBorder}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <LawyerIcon size={38} isDark={tk.isDark} />
+              </div>
+            </div>
+            <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontWeight: 700, fontSize: "clamp(1.75rem, 4vw, 2.25rem)", color: tk.textPrimary, letterSpacing: "-0.03em", margin: "0 0 0.5rem" }}>Your AI Lawyer</h2>
+            <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", color: tk.textSecondary, fontSize: "1.125rem", fontWeight: 300, fontStyle: "italic", margin: 0 }}>Making legal documents accessible to everyone</p>
+          </div>
+          <div style={{ height: "1px", background: `linear-gradient(90deg, transparent, ${tk.gold}, transparent)`, marginBottom: "2rem" }}/>
+          <section style={{ marginBottom: "2rem" }}>
+            <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.125rem", fontWeight: 700, color: tk.textPrimary, margin: "0 0 0.75rem" }}>What is Legal Ease AI?</h3>
+            <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "1.0625rem", color: tk.textSecondary, lineHeight: 1.75, margin: 0 }}>
+              Legal Ease AI is an intelligent document analysis tool that translates complex legal language into plain, understandable English. Whether reviewing a rental agreement, employment contract, terms of service, or any other legal document — we have you covered.
+            </p>
+          </section>
+          <section style={{ marginBottom: "2rem" }}>
+            <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.125rem", fontWeight: 700, color: tk.textPrimary, margin: "0 0 1rem" }}>How to Use</h3>
+            {[
+              { step: "01", title: "Paste or Upload", desc: "Paste your legal text directly or upload a PDF/DOC file from your device." },
+              { step: "02", title: "One-Click Analysis", desc: "Hit Analyse Document and our AI processes every clause in seconds." },
+              { step: "03", title: "Read Plain-English Results", desc: "Get a clear summary, risk flags with severity levels, and what you are actually agreeing to." },
+              { step: "04", title: "Know What to Negotiate", desc: "Receive actionable suggestions on clauses you should push back on." },
+            ].map(item => (
+              <div key={item.step} style={{ display: "flex", gap: "1rem", marginBottom: "1rem", padding: "1rem", borderRadius: "12px", background: tk.isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.025)", border: `1px solid ${tk.surfaceBorder}` }}>
+                <span style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "0.75rem", fontWeight: 700, color: tk.gold, letterSpacing: "0.08em", opacity: 0.8, flexShrink: 0, marginTop: "2px" }}>{item.step}</span>
+                <div>
+                  <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: "1rem", color: tk.textPrimary, margin: "0 0 0.25rem" }}>{item.title}</p>
+                  <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.9375rem", color: tk.textSecondary, lineHeight: 1.6, margin: 0 }}>{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </section>
+          <div style={{ background: tk.goldLight, border: `1px solid ${tk.goldBorder}`, borderRadius: "12px", padding: "1rem 1.25rem", display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+            <span style={{ fontSize: "1.125rem", flexShrink: 0 }}>🔒</span>
+            <div>
+              <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.9375rem", fontWeight: 600, color: tk.gold, margin: "0 0 0.25rem" }}>Your Privacy Matters</p>
+              <p style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontSize: "0.875rem", color: tk.textSecondary, lineHeight: 1.6, margin: 0 }}>Documents are never stored. All analysis happens in real-time and nothing is retained after your session ends.</p>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ width: "100%", marginTop: "1.5rem", padding: "0.875rem", borderRadius: "12px", fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: "1rem", letterSpacing: "0.04em", border: "none", cursor: "pointer", background: tk.btnBg, color: tk.btnText, transition: "opacity 0.2s" }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.82"}
+            onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+            Start Analysing →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Design tokens ───────────────────────────────────────────────
+export function useTokens() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  return {
+    isDark,
+    bg: isDark ? "#0e0e0f" : "#f9f7f4",
+    surface: isDark ? "rgba(22,20,18,0.88)" : "rgba(255,254,252,0.90)",
+    surfaceBorder: isDark ? "rgba(255,220,100,0.10)" : "rgba(160,120,40,0.15)",
+    gold: isDark ? "#c9a84c" : "#a07830",
+    goldLight: isDark ? "rgba(201,168,76,0.12)" : "rgba(160,120,40,0.09)",
+    goldBorder: isDark ? "rgba(201,168,76,0.25)" : "rgba(160,120,40,0.22)",
+    textPrimary: isDark ? "#f2eed8" : "#1a160c",
+    textSecondary: isDark ? "rgba(242,238,216,0.72)" : "rgba(26,22,12,0.68)",
+    textMuted: isDark ? "rgba(242,238,216,0.48)" : "rgba(26,22,12,0.42)",
+    inputBg: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.025)",
+    inputBorder: isDark ? "rgba(255,220,100,0.14)" : "rgba(160,120,40,0.16)",
+    divider: isDark ? "rgba(255,220,100,0.08)" : "rgba(160,120,40,0.10)",
+    btnBg: isDark ? "#c9a84c" : "#1a160c",
+    btnText: isDark ? "#0e0e0f" : "#f9f7f4",
+    danger: "#e05252",
+    success: "#3da87a",
+  };
+}
+
 function AppShell() {
   const { theme } = useTheme();
+  const tokens = useTokens();
+  const [overlayOpen, setOverlayOpen] = useState(false);
   useDotCanvas(theme);
-
   return (
-    <div
-      className="flex flex-col min-h-screen"
-      style={{
-        position: "relative",
-        backgroundColor: theme === "dark" ? "#0c0c0d" : "#f8f8f6",
-        color: theme === "dark" ? "#e8e8e8" : "#1a1a1a",
-        transition: "background-color 0.4s ease, color 0.4s ease",
-      }}
-    >
-      {/* Dot background layer */}
+    <div style={{ position: "relative", backgroundColor: tokens.bg, color: tokens.textPrimary, minHeight: "100vh", display: "flex", flexDirection: "column", transition: "background-color 0.4s ease, color 0.4s ease" }}>
       <DotBackground />
-
-      {/* Content layer */}
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", minHeight: "100vh" }}>
         <Header />
-        <div className="flex-1">
+        <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -163,28 +269,20 @@ function AppShell() {
         </div>
         <Footer />
       </div>
+      <AILawyerBtn onOpen={() => setOverlayOpen(true)} />
+      {overlayOpen && <HowItWorksOverlay onClose={() => setOverlayOpen(false)} />}
     </div>
   );
 }
 
 export default function App() {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("legal-theme") || "light";
-  });
-
+  const [theme, setTheme] = useState(() => localStorage.getItem("legal-theme") || "light");
   const toggleTheme = () => {
-    setTheme((prev) => {
-      const next = prev === "light" ? "dark" : "light";
-      localStorage.setItem("legal-theme", next);
-      return next;
-    });
+    setTheme(prev => { const next = prev === "light" ? "dark" : "light"; localStorage.setItem("legal-theme", next); return next; });
   };
-
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <BrowserRouter>
-        <AppShell />
-      </BrowserRouter>
+      <BrowserRouter><AppShell /></BrowserRouter>
     </ThemeContext.Provider>
   );
 }
