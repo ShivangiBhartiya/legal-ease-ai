@@ -2,56 +2,23 @@ import { Link } from "react-router-dom";
 import { useTokens } from "../App";
 
 function FooterLogo({ tk }) {
+  const ink = tk.isDark ? "#f2eed8" : "#1a160c";
+  const paper = tk.isDark ? "#0e0e0f" : "#f9f7f4";
+  const gold = tk.isDark ? "#c9a84c" : "#a07830";
   return (
-    <svg width="36" height="36" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Blue circular background */}
-      <circle cx="60" cy="60" r="58" fill="#d8eaf5"/>
-
-      {/* ── Books stack ── */}
-      <rect x="14" y="82" width="50" height="8" rx="2" fill="#e8a048"/>
-      <rect x="16" y="74" width="46" height="9" rx="2" fill="#c07830"/>
-      <rect x="18" y="67" width="42" height="8" rx="2" fill="#e8a048"/>
-
-      {/* ── Scales of Justice pole ── */}
-      <rect x="36" y="32" width="3" height="37" rx="1.5" fill="#c9a84c"/>
-      {/* Top horizontal bar */}
-      <rect x="22" y="32" width="31" height="3" rx="1.5" fill="#c9a84c"/>
-      {/* Left chain */}
-      <line x1="25" y1="35" x2="25" y2="52" stroke="#c9a84c" strokeWidth="1.5" strokeDasharray="2 1.5"/>
-      {/* Right chain */}
-      <line x1="50" y1="35" x2="50" y2="52" stroke="#c9a84c" strokeWidth="1.5" strokeDasharray="2 1.5"/>
-      {/* Left pan */}
-      <path d="M19 52 Q25 58 31 52" stroke="#c9a84c" strokeWidth="2" fill="rgba(201,168,76,0.25)" strokeLinecap="round"/>
-      {/* Right pan */}
-      <path d="M44 52 Q50 58 56 52" stroke="#c9a84c" strokeWidth="2" fill="rgba(201,168,76,0.25)" strokeLinecap="round"/>
-
-      {/* ── Female Lawyer ── */}
-      {/* Body / jacket (pink) */}
-      <path d="M72 95 C72 78 80 72 90 70 C100 72 108 78 108 95Z" fill="#f4a0b8"/>
-      {/* White shirt collar area */}
-      <rect x="86" y="68" width="8" height="10" rx="2" fill="white"/>
-      {/* Neck */}
-      <rect x="87" y="58" width="6" height="12" rx="3" fill="#c8845c"/>
-      {/* Head */}
-      <ellipse cx="90" cy="48" rx="12" ry="14" fill="#c8845c"/>
-      {/* Hair - brown, long */}
-      <path d="M78 42 C78 28 84 22 90 21 C96 22 102 28 102 42 C102 54 99 64 99 64 L81 64 C81 64 78 54 78 42Z" fill="#6b3b23"/>
-      {/* Face area */}
-      <ellipse cx="90" cy="49" rx="8.5" ry="10" fill="#c8845c"/>
-      {/* Hair sides */}
-      <path d="M78 42 C77 50 78 60 80 64 L81 64 C79 58 79 50 79 42Z" fill="#6b3b23"/>
-      <path d="M102 42 C103 50 102 60 100 64 L99 64 C101 58 101 50 101 42Z" fill="#6b3b23"/>
-      {/* Eyes */}
-      <ellipse cx="86" cy="47" rx="1.5" ry="1.3" fill="#3b2010"/>
-      <ellipse cx="94" cy="47" rx="1.5" ry="1.3" fill="#3b2010"/>
-      {/* Smile */}
-      <path d="M86 54 Q90 57 94 54" stroke="#a0522d" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-      {/* Arms crossed */}
-      <path d="M76 80 Q90 76 104 80" stroke="#f4a0b8" strokeWidth="7" fill="none" strokeLinecap="round"/>
-      <path d="M76 80 Q80 85 90 83 Q100 85 104 80" stroke="#e87898" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-
-      {/* Dividing line (desk surface) */}
-      <line x1="10" y1="88" x2="110" y2="88" stroke="#b0c8d8" strokeWidth="1.5" strokeLinecap="round"/>
+    <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
+      <rect x="6" y="3" width="28" height="36" rx="2.5" fill={ink}/>
+      <line x1="11" y1="16" x2="24" y2="16" stroke={paper} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="11" y1="21" x2="28" y2="21" stroke={paper} strokeWidth="2" strokeLinecap="round"/>
+      <line x1="11" y1="26" x2="26" y2="26" stroke={paper} strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="36" cy="36" r="11" fill={paper} stroke={gold} strokeWidth="1.25"/>
+      <line x1="36" y1="28" x2="36" y2="42" stroke={ink} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="32" y1="42" x2="40" y2="42" stroke={ink} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="30" y1="31" x2="42" y2="31" stroke={ink} strokeWidth="1.25" strokeLinecap="round"/>
+      <line x1="31" y1="31" x2="31" y2="36" stroke={ink} strokeWidth="1"/>
+      <path d="M28 36 Q31 39 34 36" stroke={ink} strokeWidth="1.25" fill="none" strokeLinecap="round"/>
+      <line x1="41" y1="31" x2="41" y2="36" stroke={ink} strokeWidth="1"/>
+      <path d="M38 36 Q41 39 44 36" stroke={ink} strokeWidth="1.25" fill="none" strokeLinecap="round"/>
     </svg>
   );
 }

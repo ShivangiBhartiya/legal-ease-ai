@@ -5,6 +5,8 @@ import Footer from "./components/Footer";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Waitlist from "./pages/Waitlist";
+import Admin from "./pages/Admin";
 
 export const ThemeContext = createContext(null);
 export function useTheme() { return useContext(ThemeContext); }
@@ -71,30 +73,12 @@ function useDotCanvas(theme) {
   }, [theme]);
 }
 
-// ── Lawyer SVG icon (female lawyer with gown + collar bands) ───
-function LawyerIcon({ size = 30, isDark }) {
-  const fill = isDark ? "#c9a84c" : "#1a160c";
-  const bg = isDark ? "rgba(201,168,76,0.18)" : "rgba(26,22,12,0.12)";
+// ── Grey User Icon — same in both themes ───────────────────────
+function UserIcon({ size = 22 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Gown body */}
-      <path d="M15 100 C15 72 28 62 50 58 C72 62 85 72 85 100Z" fill={fill}/>
-      {/* Collar bands (two white strips) */}
-      <rect x="43" y="59" width="6" height="14" rx="1.5" fill={isDark ? "#0e0e0f" : "#f9f7f4"}/>
-      <rect x="51" y="59" width="6" height="14" rx="1.5" fill={isDark ? "#0e0e0f" : "#f9f7f4"}/>
-      {/* Collar bow knot */}
-      <path d="M40 60 L50 65 L60 60 L50 57Z" fill={fill}/>
-      {/* Neck */}
-      <rect x="44" y="48" width="12" height="12" rx="4" fill={isDark ? "#d4a96a" : "#c8845c"}/>
-      {/* Head */}
-      <ellipse cx="50" cy="34" rx="16" ry="18" fill={isDark ? "#d4a96a" : "#c8845c"}/>
-      {/* Hair — long, covering sides */}
-      <path d="M34 28 C30 20 32 8 50 6 C68 8 70 20 66 28 C66 42 62 54 62 54 L38 54 C38 54 34 42 34 28Z" fill={fill}/>
-      {/* Face cutout */}
-      <ellipse cx="50" cy="35" rx="11" ry="13" fill={isDark ? "#d4a96a" : "#c8845c"}/>
-      {/* Hair side cover */}
-      <path d="M34 28 C32 35 33 46 36 52 L38 54 C38 54 36 44 36 34Z" fill={fill}/>
-      <path d="M66 28 C68 35 67 46 64 52 L62 54 C62 54 64 44 64 34Z" fill={fill}/>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="8" r="4"/>
+      <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
     </svg>
   );
 }
@@ -105,7 +89,6 @@ function AILawyerBtn({ onOpen }) {
   const [hovered, setHovered] = useState(false);
   return (
     <div style={{ position: "fixed", bottom: "2rem", right: "2rem", zIndex: 9999 }}>
-      {/* Tooltip */}
       <div style={{
         position: "absolute", bottom: "calc(100% + 0.75rem)", right: 0,
         background: tk.isDark ? "rgba(22,20,18,0.97)" : "rgba(255,254,252,0.97)",
@@ -123,7 +106,6 @@ function AILawyerBtn({ onOpen }) {
         <span style={{ color: tk.gold, fontWeight: 600 }}>Your AI Lawyer</span>{" — "}here to help
         <div style={{ position: "absolute", bottom: "-5px", right: "18px", width: "10px", height: "10px", background: tk.isDark ? "rgba(22,20,18,0.97)" : "rgba(255,254,252,0.97)", border: `1px solid ${tk.goldBorder}`, borderTop: "none", borderLeft: "none", transform: "rotate(45deg)", borderRadius: "0 0 2px 0" }}/>
       </div>
-      {/* Button */}
       <button
         onClick={onOpen}
         onMouseEnter={() => setHovered(true)}
@@ -131,20 +113,20 @@ function AILawyerBtn({ onOpen }) {
         style={{
           width: "54px", height: "54px", borderRadius: "50%",
           background: tk.isDark
-            ? "linear-gradient(135deg, #c9a84c 0%, #8a6520 100%)"
-            : "linear-gradient(135deg, #1a160c 0%, #3a2a14 100%)",
-          border: `2px solid ${tk.goldBorder}`,
+            ? "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)"
+            : "linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%)",
+          border: `2px solid ${tk.isDark ? "rgba(156,163,175,0.3)" : "rgba(156,163,175,0.4)"}`,
           cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: hovered
-            ? (tk.isDark ? "0 0 0 8px rgba(201,168,76,0.15), 0 12px 32px rgba(0,0,0,0.5)" : "0 0 0 8px rgba(26,22,12,0.1), 0 12px 32px rgba(0,0,0,0.25)")
-            : (tk.isDark ? "0 4px 20px rgba(0,0,0,0.5)" : "0 4px 20px rgba(0,0,0,0.18)"),
+            ? (tk.isDark ? "0 0 0 8px rgba(156,163,175,0.1), 0 12px 32px rgba(0,0,0,0.5)" : "0 0 0 8px rgba(156,163,175,0.15), 0 12px 32px rgba(0,0,0,0.15)")
+            : (tk.isDark ? "0 4px 20px rgba(0,0,0,0.5)" : "0 4px 20px rgba(0,0,0,0.12)"),
           transform: hovered ? "scale(1.1)" : "scale(1)",
           transition: "all 0.25s cubic-bezier(.34,1.56,.64,1)",
           padding: 0,
         }}
       >
-        <LawyerIcon size={30} isDark={tk.isDark} />
+        <UserIcon size={22} />
       </button>
     </div>
   );
@@ -176,8 +158,8 @@ function HowItWorksOverlay({ onClose }) {
         <div style={{ paddingTop: "2rem" }}>
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "0.75rem" }}>
-              <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: tk.goldLight, border: `2px solid ${tk.goldBorder}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <LawyerIcon size={38} isDark={tk.isDark} />
+              <div style={{ width: "64px", height: "64px", borderRadius: "50%", background: tk.isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)", border: `2px solid rgba(156,163,175,0.3)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <UserIcon size={32} />
               </div>
             </div>
             <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontWeight: 700, fontSize: "clamp(1.75rem, 4vw, 2.25rem)", color: tk.textPrimary, letterSpacing: "-0.03em", margin: "0 0 0.5rem" }}>Your AI Lawyer</h2>
@@ -265,6 +247,8 @@ function AppShell() {
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/waitlist" element={<Waitlist />} />
+            <Route path="/admin" element={<Admin />} />
           </Routes>
         </div>
         <Footer />

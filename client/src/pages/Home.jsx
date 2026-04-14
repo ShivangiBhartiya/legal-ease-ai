@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
+import axios from "axios";
 import { useTokens } from "../App";
-import WaitlistForm from "../components/WaitlistForm";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -9,6 +9,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
   const tk = useTokens();
+
+  // Waitlist state
+  const [wForm, setWForm] = useState({ name: "", email: "", phone: "" });
+  const [wStatus, setWStatus] = useState(null);
+  const [wMsg, setWMsg] = useState("");
+  const [wLoading, setWLoading] = useState(false);
 
   const charLimit = 5000;
   const hasInput = text.trim() || fileName;
@@ -22,10 +28,53 @@ export default function Home() {
     setTimeout(()=>{ setLoading(false); alert("Connect your AI handler here."); }, 2000);
   };
 
+  const handleWChange = (e) =>
+    setWForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleWSubmit = async () => {
+    if (!wForm.name || !wForm.email) {
+      setWStatus("error");
+      setWMsg("Name and email are required.");
+      return;
+    }
+    setWLoading(true);
+    setWStatus(null);
+    try {
+      await axios.post("http://localhost:5000/api/joinwaitlist", wForm);
+      setWStatus("success");
+      setWMsg("You're on the list! We'll reach out soon. 🎉");
+      setWForm({ name: "", email: "", phone: "" });
+    } catch (err) {
+      setWStatus("error");
+      setWMsg(
+        err.response?.data?.error === "Email already registered"
+          ? "This email is already registered."
+          : "Something went wrong. Please try again."
+      );
+    } finally {
+      setWLoading(false);
+    }
+  };
+
+  const inputStyle = {
+    width: "100%",
+    background: tk.inputBg,
+    border: `1px solid ${tk.inputBorder}`,
+    borderRadius: "10px",
+    padding: "0.75rem 1rem",
+    fontSize: "0.9375rem",
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    color: tk.textPrimary,
+    outline: "none",
+    boxSizing: "border-box",
+    transition: "border-color .25s",
+  };
+
   return (
     <main style={{ position:"relative", minHeight:"100vh" }}>
       <style>{`
         textarea::placeholder { color: ${tk.textMuted}; }
+        input::placeholder { color: ${tk.textMuted}; }
         @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes heroIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
@@ -34,6 +83,7 @@ export default function Home() {
         .hero-sub   { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .25s both; }
         .hero-card  { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .35s both; }
         .hero-trust { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .45s both; }
+        .waitlist-card { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .55s both; }
       `}</style>
 
       <section style={{
@@ -249,11 +299,122 @@ export default function Home() {
           }}>
             Your document is never stored · Analysis happens in real time
           </p>
+
+          {/* ── Waitlist Section ── */}
+          <div className="waitlist-card" style={{
+            width:"100%", marginTop:"1.5rem",
+            background:tk.surface,
+            backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
+            border:`1px solid ${tk.surfaceBorder}`,
+            borderRadius:"20px",
+            padding:"1.875rem",
+            boxShadow: tk.isDark
+              ? "0 32px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,220,100,.06)"
+              : "0 12px 48px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.9)",
+            textAlign:"left",
+          }}>
+            {/* Waitlist heading */}
+            <div style={{ marginBottom:"1.25rem" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"0.5rem", marginBottom:"0.375rem" }}>
+                <span style={{
+                  display:"inline-flex", alignItems:"center", gap:"0.375rem",
+                  background:tk.goldLight, border:`1px solid ${tk.goldBorder}`,
+                  color:tk.gold,
+                  fontFamily:"'Cormorant Garamond', Georgia, serif",
+                  fontSize:"0.7rem", fontWeight:600,
+                  padding:"0.2rem 0.75rem", borderRadius:"999px",
+                  letterSpacing:"0.1em", textTransform:"uppercase",
+                }}>
+                  <span style={{ width:"5px", height:"5px", borderRadius:"50%", backgroundColor:tk.success, animation:"pulse-dot 2s infinite", display:"inline-block" }}/>
+                  Early Access
+                </span>
+              </div>
+              <h2 style={{
+                fontFamily:"'Noto Serif', Georgia, serif",
+                fontWeight:700, fontSize:"clamp(1.25rem, 3vw, 1.625rem)",
+                color:tk.textPrimary, letterSpacing:"-0.02em", margin:"0 0 0.375rem",
+              }}>Join the Waitlist</h2>
+              <p style={{
+                fontFamily:"'Cormorant Garamond', Georgia, serif",
+                color:tk.textSecondary, fontSize:"1rem", margin:0, lineHeight:1.6,
+              }}>
+                Be the first to access Legal Ease AI when we launch.
+              </p>
+            </div>
+
+            {/* Form */}
+            <div style={{ display:"flex", flexDirection:"column", gap:"0.875rem" }}>
+              <input
+                name="name"
+                placeholder="Full Name *"
+                value={wForm.name}
+                onChange={handleWChange}
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = tk.gold}
+                onBlur={e => e.target.style.borderColor = tk.inputBorder}
+              />
+              <input
+                name="email"
+                type="email"
+                placeholder="Email Address *"
+                value={wForm.email}
+                onChange={handleWChange}
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = tk.gold}
+                onBlur={e => e.target.style.borderColor = tk.inputBorder}
+              />
+              <input
+                name="phone"
+                placeholder="Phone Number (optional)"
+                value={wForm.phone}
+                onChange={handleWChange}
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = tk.gold}
+                onBlur={e => e.target.style.borderColor = tk.inputBorder}
+              />
+
+              {wStatus && (
+                <p style={{
+                  fontFamily:"'Cormorant Garamond', Georgia, serif",
+                  fontSize:"0.9375rem",
+                  color: wStatus === "success" ? tk.success : tk.danger,
+                  margin:0, fontWeight:500,
+                }}>{wMsg}</p>
+              )}
+
+              <button
+                onClick={handleWSubmit}
+                disabled={wLoading}
+                style={{
+                  width:"100%", padding:"0.85rem",
+                  borderRadius:"12px",
+                  fontFamily:"'Cormorant Garamond', Georgia, serif",
+                  fontWeight:600, fontSize:"1rem",
+                  letterSpacing:"0.04em", border:"none",
+                  cursor: wLoading ? "not-allowed" : "pointer",
+                  opacity: wLoading ? 0.6 : 1,
+                  background:tk.btnBg, color:tk.btnText,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:"0.5rem",
+                  transition:"opacity .25s",
+                }}
+                onMouseEnter={e => !wLoading && (e.currentTarget.style.opacity = "0.82")}
+                onMouseLeave={e => e.currentTarget.style.opacity = wLoading ? "0.6" : "1"}
+              >
+                {wLoading ? (
+                  <>
+                    <svg style={{animation:"spin 1s linear infinite",width:"15px",height:"15px"}} fill="none" viewBox="0 0 24 24">
+                      <circle style={{opacity:.25}} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path style={{opacity:.75}} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                    </svg>
+                    Submitting…
+                  </>
+                ) : "Join Waitlist →"}
+              </button>
+            </div>
+          </div>
+
         </div>
       </section>
-
-      {/* ── Waitlist Section ── */}
-      <WaitlistForm />
     </main>
   );
 }
