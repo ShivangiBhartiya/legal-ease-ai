@@ -7,6 +7,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Waitlist from "./pages/Waitlist";
 import Admin from "./pages/Admin";
+import Auth from "./pages/AuthPages";
+import Dashboard from "./pages/Dashboard";
 
 export const ThemeContext = createContext(null);
 export function useTheme() { return useContext(ThemeContext); }
@@ -58,7 +60,7 @@ function useDotCanvas(theme) {
           const dist = Math.sqrt(dx * dx + dy * dy);
           const wave = Math.sin((x + y) * 0.016 - t * 0.07) * 0.5 + 0.5;
           const prox = dist < MOUSE_R ? 1 - dist / MOUSE_R : 0;
-          const alpha = Math.min(0.08 + wave * 0.1 + prox * 0.6, 0.92);
+          const alpha = Math.min(0.015 + wave * 0.018 + prox * 0.08, 0.12);
           let ox = 0, oy = 0;
           if (prox > 0) { const ang = Math.atan2(dy, dx); const push = prox * 8; ox = Math.cos(ang) * push; oy = Math.sin(ang) * push; }
           const rad = RADIUS + prox * 2.8;
@@ -73,7 +75,6 @@ function useDotCanvas(theme) {
   }, [theme]);
 }
 
-// ── Grey User Icon — same in both themes ───────────────────────
 function UserIcon({ size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -83,7 +84,6 @@ function UserIcon({ size = 22 }) {
   );
 }
 
-// ── AI Lawyer Button ────────────────────────────────────────────
 function AILawyerBtn({ onOpen }) {
   const tk = useTokens();
   const [hovered, setHovered] = useState(false);
@@ -132,7 +132,6 @@ function AILawyerBtn({ onOpen }) {
   );
 }
 
-// ── How It Works Overlay ────────────────────────────────────────
 function HowItWorksOverlay({ onClose }) {
   const tk = useTokens();
   useEffect(() => {
@@ -207,7 +206,6 @@ function HowItWorksOverlay({ onClose }) {
   );
 }
 
-// ── Design tokens ───────────────────────────────────────────────
 export function useTokens() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -249,6 +247,8 @@ function AppShell() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/waitlist" element={<Waitlist />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Dashboard />} />
           </Routes>
         </div>
         <Footer />

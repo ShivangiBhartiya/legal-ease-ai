@@ -1,205 +1,398 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useEffect, useState } from "react";
 import { useTokens } from "../App";
+import LogoMark from "../components/LogoMark";
 
+const API = "http://localhost:5000/api";
 const ADMIN_PASSWORD = "1234";
 
 export default function Admin() {
   const tk = useTokens();
-  const [authed, setAuthed] = useState(false);
-  const [pwInput, setPwInput] = useState("");
-  const [pwError, setPwError] = useState(false);
-  const [entries, setEntries] = useState([]);
-  const [loadingData, setLoadingData] = useState(false);
 
-  const handleLogin = () => {
-    if (pwInput === ADMIN_PASSWORD) {
+  const [authed, setAuthed] = useState(false);
+  const [pw, setPw] = useState("");
+  const [error, setError] = useState(false);
+  const [waitlist, setWaitlist] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const muted = {
+    color: tk.textMuted,
+    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontSize: "1rem",
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [wRes, uRes] = await Promise.all([
+        fetch(`${API}/waitlist`).then((r) => r.json()),
+        fetch(`${API}/users`).then((r) => r.json()),
+      ]);
+
+      if (wRes.success) setWaitlist(wRes.data);
+      if (uRes.success) setUsers(uRes.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = () => {
+    if (pw === ADMIN_PASSWORD) {
       setAuthed(true);
-      setPwError(false);
+      setError(false);
     } else {
-      setPwError(true);
+      setError(true);
     }
   };
 
   useEffect(() => {
-    if (!authed) return;
-    setLoadingData(true);
-    axios.get("/api/waitlist")
-      .then(res => setEntries(res.data.data))
-      .catch(err => console.error(err))
-      .finally(() => setLoadingData(false));
+    if (authed) loadData();
   }, [authed]);
 
-  const inputStyle = {
-    width: "100%",
-    background: tk.inputBg,
-    border: `1px solid ${tk.inputBorder}`,
-    borderRadius: "10px",
-    padding: "0.75rem 1rem",
-    fontSize: "0.9375rem",
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
-    color: tk.textPrimary,
-    outline: "none",
-    boxSizing: "border-box",
-    transition: "border-color .25s",
+  const updateWaitlistStatus = async (id, status) => {
+    setUpdatingId(id);
+    try {
+      const res = await fetch(`${API}/waitlist/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error || "Unable to update status");
+
+      setWaitlist((current) => current.map((entry) => (entry.id === id ? data.data : entry)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
-  // ── Password screen ──
+  const statusPill = (status) => {
+    if (status === "approved") {
+      return { bg: "rgba(61,168,122,0.14)", border: "rgba(61,168,122,0.35)", color: "#3da87a", label: "Approved" };
+    }
+    if (status === "denied") {
+      return { bg: "rgba(224,82,82,0.12)", border: "rgba(224,82,82,0.35)", color: "#e05252", label: "Denied" };
+    }
+    return { bg: tk.goldLight, border: tk.goldBorder, color: tk.gold, label: "Pending" };
+  };
+
+  const statCard = {
+    background: tk.surface,
+    border: `1px solid ${tk.goldBorder}`,
+    borderRadius: "22px",
+    padding: "1.25rem 1.35rem",
+    boxShadow: tk.isDark ? "0 24px 60px rgba(0,0,0,0.35)" : "0 18px 50px rgba(31,24,8,0.08)",
+    backdropFilter: "blur(20px)",
+  };
+
+  const cardStyle = {
+    ...statCard,
+    padding: "1.5rem",
+  };
+
   if (!authed) {
     return (
-      <main style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"6rem 1.5rem" }}>
-        <div style={{
-          width:"100%", maxWidth:"380px",
-          background:tk.surface,
-          border:`1px solid ${tk.surfaceBorder}`,
-          borderRadius:"20px", padding:"2.5rem",
-          boxShadow: tk.isDark ? "0 32px 80px rgba(0,0,0,.5)" : "0 12px 48px rgba(0,0,0,.07)",
-        }}>
-          <div style={{ textAlign:"center", marginBottom:"1.75rem" }}>
-            <div style={{
-              width:"48px", height:"48px", borderRadius:"50%",
-              background:tk.goldLight, border:`1px solid ${tk.goldBorder}`,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              margin:"0 auto 1rem",
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={tk.gold} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
-              </svg>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "5rem 1.5rem 2rem",
+          background: tk.bg,
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "460px",
+            background: tk.surface,
+            border: `1px solid ${tk.goldBorder}`,
+            borderRadius: "24px",
+            padding: "2.5rem 2.25rem",
+            boxShadow: tk.isDark
+              ? "0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,100,0.07)"
+              : "0 24px 60px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
+            backdropFilter: "blur(24px)",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: "1.8rem" }}>
+            <div
+              style={{
+                width: "56px",
+                height: "56px",
+                borderRadius: "50%",
+                background: tk.goldLight,
+                border: `1.5px solid ${tk.goldBorder}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 1rem",
+              }}
+            >
+              <LogoMark size={26} isDark={tk.isDark} />
             </div>
-            <h2 style={{ fontFamily:"'Noto Serif', Georgia, serif", fontWeight:700, fontSize:"1.5rem", color:tk.textPrimary, margin:"0 0 0.25rem" }}>Admin Access</h2>
-            <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.textSecondary, fontSize:"1rem", margin:0 }}>Enter password to view waitlist</p>
+            <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.875rem", margin: "0 0 0.35rem" }}>
+              Admin Login
+            </h2>
+            <p style={{ ...muted, margin: 0 }}>Use the admin password to manage waitlist access.</p>
           </div>
 
-          <div style={{ display:"flex", flexDirection:"column", gap:"0.875rem" }}>
-            <input
-              type="password"
-              placeholder="Password"
-              value={pwInput}
-              onChange={e => { setPwInput(e.target.value); setPwError(false); }}
-              onKeyDown={e => e.key === "Enter" && handleLogin()}
-              style={{ ...inputStyle, borderColor: pwError ? tk.danger : tk.inputBorder }}
-              onFocus={e => e.target.style.borderColor = pwError ? tk.danger : tk.gold}
-              onBlur={e => e.target.style.borderColor = pwError ? tk.danger : tk.inputBorder}
-            />
-            {pwError && (
-              <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.danger, fontSize:"0.9rem", margin:0 }}>
-                Incorrect password. Try again.
-              </p>
-            )}
-            <button
-              onClick={handleLogin}
-              style={{
-                width:"100%", padding:"0.85rem", borderRadius:"12px",
-                fontFamily:"'Cormorant Garamond', Georgia, serif",
-                fontWeight:600, fontSize:"1rem", letterSpacing:"0.04em",
-                border:"none", cursor:"pointer",
-                background:tk.btnBg, color:tk.btnText,
-                transition:"opacity .25s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.opacity = "0.82"}
-              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
-            >
-              Enter →
-            </button>
-          </div>
+          <input
+            type="password"
+            placeholder="Enter password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && login()}
+            style={{
+              width: "100%",
+              padding: "0.85rem 1rem",
+              marginBottom: "1rem",
+              borderRadius: "12px",
+              border: `1px solid ${tk.inputBorder}`,
+              background: tk.inputBg,
+              color: tk.textPrimary,
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "1rem",
+              boxSizing: "border-box",
+            }}
+          />
+
+          <button
+            onClick={login}
+            style={{
+              width: "100%",
+              padding: "0.9rem",
+              borderRadius: "12px",
+              border: "none",
+              background: tk.isDark ? "#c9a84c" : "#1a160c",
+              color: tk.isDark ? "#0e0e0f" : "#f9f7f4",
+              cursor: "pointer",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: "1.0625rem",
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+            }}
+          >
+            Login
+          </button>
+
+          {error && <p style={{ color: "#e05252", margin: "0.85rem 0 0", ...muted }}>Wrong password</p>}
         </div>
-      </main>
+      </div>
     );
   }
 
-  // ── Admin dashboard ──
   return (
-    <main style={{ minHeight:"100vh", padding:"6rem 1.5rem 4rem" }}>
-      <div style={{ maxWidth:"900px", margin:"0 auto" }}>
-
-        {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"2rem", flexWrap:"wrap", gap:"1rem" }}>
-          <div>
-            <h1 style={{ fontFamily:"'Noto Serif', Georgia, serif", fontWeight:700, fontSize:"clamp(1.5rem,4vw,2rem)", color:tk.textPrimary, letterSpacing:"-0.03em", margin:"0 0 0.25rem" }}>
-              Waitlist Entries
-            </h1>
-            <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.textSecondary, fontSize:"1rem", margin:0 }}>
-              {entries.length} {entries.length === 1 ? "person" : "people"} on the waitlist
-            </p>
-          </div>
-          <button
-            onClick={() => { setAuthed(false); setPwInput(""); }}
+    <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "5rem 1.5rem 3rem", color: tk.textPrimary }}>
+      <div
+        style={{
+          ...cardStyle,
+          marginBottom: "1.5rem",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <p
             style={{
-              padding:"0.5rem 1.25rem", borderRadius:"8px",
-              fontFamily:"'Cormorant Garamond', Georgia, serif",
-              fontWeight:600, fontSize:"0.875rem",
-              border:`1px solid ${tk.goldBorder}`,
-              background:tk.goldLight, color:tk.gold,
-              cursor:"pointer", transition:"all .2s",
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              color: tk.gold,
+              letterSpacing: "0.14em",
+              fontSize: "0.8rem",
+              margin: "0 0 0.4rem",
+              textTransform: "uppercase",
             }}
-            onMouseEnter={e => e.currentTarget.style.background = tk.isDark ? "rgba(201,168,76,0.2)" : "rgba(160,120,40,0.15)"}
-            onMouseLeave={e => e.currentTarget.style.background = tk.goldLight}
           >
-            Logout
-          </button>
+            Legal Ease AI
+          </p>
+          <h1 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2.1rem", margin: "0 0 0.4rem" }}>
+            Admin Dashboard
+          </h1>
+          <p style={{ ...muted, margin: 0 }}>
+            Review waitlist entries, approve platform access, and track registered members.
+          </p>
         </div>
-
-        {/* Divider */}
-        <div style={{ height:"1px", background:`linear-gradient(90deg, transparent, ${tk.gold}, transparent)`, marginBottom:"2rem" }}/>
-
-        {/* Loading */}
-        {loadingData && (
-          <div style={{ textAlign:"center", padding:"3rem", fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.textSecondary, fontSize:"1.125rem" }}>
-            Loading entries…
-          </div>
-        )}
-
-        {/* Empty */}
-        {!loadingData && entries.length === 0 && (
-          <div style={{
-            textAlign:"center", padding:"3rem",
-            background:tk.surface, border:`1px solid ${tk.surfaceBorder}`,
-            borderRadius:"16px",
-          }}>
-            <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.textSecondary, fontSize:"1.125rem", margin:0 }}>
-              No entries yet. Share your waitlist link!
-            </p>
-          </div>
-        )}
-
-        {/* Table */}
-        {!loadingData && entries.length > 0 && (
-          <div style={{ overflowX:"auto", borderRadius:"16px", border:`1px solid ${tk.surfaceBorder}` }}>
-            <table style={{ width:"100%", borderCollapse:"collapse", fontFamily:"'Cormorant Garamond', Georgia, serif" }}>
-              <thead>
-                <tr style={{ background: tk.isDark ? "rgba(255,220,100,0.06)" : "rgba(160,120,40,0.07)" }}>
-                  {["#", "Name", "Email", "Phone", "Joined"].map(h => (
-                    <th key={h} style={{
-                      padding:"0.875rem 1.25rem", textAlign:"left",
-                      fontWeight:600, fontSize:"0.8125rem",
-                      letterSpacing:"0.06em", textTransform:"uppercase",
-                      color:tk.gold, borderBottom:`1px solid ${tk.surfaceBorder}`,
-                      whiteSpace:"nowrap",
-                    }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {entries.map((entry, i) => (
-                  <tr key={entry.id}
-                    style={{ background: i % 2 === 0 ? "transparent" : (tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.018)") }}
-                    onMouseEnter={e => e.currentTarget.style.background = tk.isDark ? "rgba(201,168,76,0.06)" : "rgba(160,120,40,0.05)"}
-                    onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? "transparent" : (tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.018)")}
-                  >
-                    <td style={{ padding:"0.875rem 1.25rem", color:tk.textMuted, fontSize:"0.875rem", borderBottom:`1px solid ${tk.surfaceBorder}` }}>{i + 1}</td>
-                    <td style={{ padding:"0.875rem 1.25rem", color:tk.textPrimary, fontWeight:600, fontSize:"1rem", borderBottom:`1px solid ${tk.surfaceBorder}` }}>{entry.name}</td>
-                    <td style={{ padding:"0.875rem 1.25rem", color:tk.textSecondary, fontSize:"0.9375rem", borderBottom:`1px solid ${tk.surfaceBorder}` }}>{entry.email}</td>
-                    <td style={{ padding:"0.875rem 1.25rem", color:tk.textSecondary, fontSize:"0.9375rem", borderBottom:`1px solid ${tk.surfaceBorder}` }}>{entry.phone || "—"}</td>
-                    <td style={{ padding:"0.875rem 1.25rem", color:tk.textMuted, fontSize:"0.875rem", borderBottom:`1px solid ${tk.surfaceBorder}`, whiteSpace:"nowrap" }}>
-                      {new Date(entry.created_at).toLocaleDateString("en-IN", { day:"numeric", month:"short", year:"numeric" })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            padding: "0.85rem 1rem",
+            borderRadius: "16px",
+            background: tk.goldLight,
+            border: `1px solid ${tk.goldBorder}`,
+          }}
+        >
+          <LogoMark size={24} isDark={tk.isDark} />
+          <p style={{ ...muted, margin: 0 }}>Approve users here before they can access the platform.</p>
+        </div>
       </div>
-    </main>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          gap: "1rem",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div style={statCard}>
+          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Total waitlist</p>
+          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>{waitlist.length}</h3>
+        </div>
+        <div style={statCard}>
+          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Approved</p>
+          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>
+            {waitlist.filter((entry) => entry.status === "approved").length}
+          </h3>
+        </div>
+        <div style={statCard}>
+          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Pending review</p>
+          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>
+            {waitlist.filter((entry) => entry.status !== "approved" && entry.status !== "denied").length}
+          </h3>
+        </div>
+        <div style={statCard}>
+          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Registered users</p>
+          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>{users.length}</h3>
+        </div>
+      </div>
+
+      {loading ? (
+        <p style={{ ...muted, fontStyle: "italic" }}>Loading...</p>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: "1.5rem",
+          }}
+        >
+          <div style={cardStyle}>
+            <div style={{ marginBottom: "1rem" }}>
+              <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.25rem", margin: 0 }}>Join Waitlist</h2>
+              <p style={{ ...muted, margin: "0.25rem 0 0" }}>Approve in green or deny in red for every entry.</p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
+              {waitlist.length === 0 && <p style={{ ...muted, margin: 0 }}>No waitlist entries yet.</p>}
+              {waitlist.map((entry) => {
+                const pill = statusPill(entry.status);
+                return (
+                  <div
+                    key={entry.id}
+                    style={{
+                      border: `1px solid ${tk.surfaceBorder}`,
+                      borderRadius: "18px",
+                      padding: "1rem",
+                      background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
+                      <div>
+                        <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.125rem", margin: "0 0 0.3rem" }}>{entry.name}</h3>
+                        <p style={{ ...muted, margin: "0 0 0.2rem" }}>{entry.email}</p>
+                        <p style={{ ...muted, margin: 0 }}>{entry.phone || "No phone shared"}</p>
+                      </div>
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: "0.35rem 0.75rem",
+                          borderRadius: "999px",
+                          background: pill.bg,
+                          border: `1px solid ${pill.border}`,
+                          color: pill.color,
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontWeight: 700,
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {pill.label}
+                      </span>
+                    </div>
+
+                    <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.95rem", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => updateWaitlistStatus(entry.id, "approved")}
+                        disabled={updatingId === entry.id}
+                        style={{
+                          border: "1px solid rgba(61,168,122,0.42)",
+                          background: "rgba(61,168,122,0.14)",
+                          color: "#3da87a",
+                          borderRadius: "10px",
+                          padding: "0.7rem 1rem",
+                          cursor: updatingId === entry.id ? "not-allowed" : "pointer",
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          minWidth: "112px",
+                        }}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => updateWaitlistStatus(entry.id, "denied")}
+                        disabled={updatingId === entry.id}
+                        style={{
+                          border: "1px solid rgba(224,82,82,0.42)",
+                          background: "rgba(224,82,82,0.12)",
+                          color: "#e05252",
+                          borderRadius: "10px",
+                          padding: "0.7rem 1rem",
+                          cursor: updatingId === entry.id ? "not-allowed" : "pointer",
+                          fontFamily: "'Cormorant Garamond', Georgia, serif",
+                          fontSize: "0.95rem",
+                          fontWeight: 700,
+                          minWidth: "112px",
+                        }}
+                      >
+                        Deny
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ marginBottom: "1rem" }}>
+              <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.25rem", margin: 0 }}>Registered Users</h2>
+              <p style={{ ...muted, margin: "0.25rem 0 0" }}>Only approved emails should be able to register and login.</p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+              {users.length === 0 && <p style={{ ...muted, margin: 0 }}>No registered users yet.</p>}
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  style={{
+                    border: `1px solid ${tk.surfaceBorder}`,
+                    borderRadius: "16px",
+                    padding: "0.95rem 1rem",
+                    background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)",
+                  }}
+                >
+                  <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.05rem", margin: "0 0 0.25rem" }}>{user.username}</h3>
+                  <p style={{ ...muted, margin: 0 }}>{user.email}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
