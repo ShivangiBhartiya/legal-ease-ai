@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTokens } from "../App";
 import LogoMark from "../components/LogoMark";
 
-const API = "http://localhost:5000/api";
+const API = "/api";
 
 export default function AuthPages() {
   const tk = useTokens();

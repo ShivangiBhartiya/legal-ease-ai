@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useTokens } from "../App";
+
+const API = "/api";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -22,10 +25,32 @@ export default function Home() {
   const handleFileChange = e => { const f=e.target.files[0]; if(f) setFileName(f.name); };
   const handleRemoveFile = e => { e.stopPropagation(); setFileName(null); if(fileInputRef.current) fileInputRef.current.value=""; };
   const handleDrop = e => { e.preventDefault(); setDragging(false); const f=e.dataTransfer.files[0]; if(f) setFileName(f.name); };
-  const handleAnalyze = () => {
-    if(!hasInput) return;
+  const handleAnalyze = async () => {
+    if (!hasInput) return;
     setLoading(true);
-    setTimeout(()=>{ setLoading(false); alert("Connect your AI handler here."); }, 2000);
+    try {
+      let res;
+      if (fileInputRef.current?.files?.[0]) {
+        const formData = new FormData();
+        formData.append("file", fileInputRef.current.files[0]);
+        res = await axios.post("http://localhost:5000/api/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      } else {
+        res = await axios.post("http://localhost:5000/api/analyze-text", { text });
+      }
+      const stored = localStorage.getItem("legal-user");
+      if (stored) {
+        sessionStorage.setItem("legal-analysis", JSON.stringify(res.data.analysis));
+        window.location.href = "/dashboard";
+      } else {
+        window.location.href = "/auth";
+      }
+    } catch (err) {
+      alert(err.response?.data?.error || "Analysis failed. Make sure the backend is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleWChange = (e) =>
@@ -40,7 +65,7 @@ export default function Home() {
     setWLoading(true);
     setWStatus(null);
     try {
-      await axios.post("http://localhost:5000/api/joinwaitlist", wForm);
+      await axios.post(`${API}/joinwaitlist`, wForm);
       setWStatus("success");
       setWMsg("You're on the list! We'll reach out soon. 🎉");
       setWForm({ name: "", email: "", phone: "" });
@@ -223,7 +248,7 @@ export default function Home() {
                 transition:"border-color .2s, background .2s",
               }}
             >
-              <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.txt"
+              <input ref={fileInputRef} type="file" accept=".pdf,.txt"
                 style={{display:"none"}} onChange={handleFileChange}/>
               <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", minWidth:0 }}>
                 <svg width="18" height="18" fill="none" stroke={tk.gold} viewBox="0 0 24 24">
@@ -263,7 +288,7 @@ export default function Home() {
             <p style={{
               fontFamily:"'Cormorant Garamond', Georgia, serif",
               fontSize:"0.8rem", color:tk.textSecondary, marginTop:"-0.25rem", fontWeight:500,
-            }}>Accepted: PDF, DOC, DOCX, TXT</p>
+            }}>Accepted: PDF, TXT</p>
 
             {/* Analyse button */}
             <button onClick={handleAnalyze} disabled={!hasInput||loading} style={{

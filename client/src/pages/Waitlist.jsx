@@ -2,6 +2,8 @@ import { useState } from "react";
 import axios from "axios";
 import { useTokens } from "../App";
 
+const API = "/api";
+
 export default function Waitlist() {
   const tk = useTokens();
   const [form, setForm] = useState({ name: "", email: "", phone: "" });
@@ -21,7 +23,7 @@ export default function Waitlist() {
     setLoading(true);
     setStatus(null);
     try {
-      await axios.post("http://localhost:5000/api/joinwaitlist", form);
+      await axios.post(`${API}/joinwaitlist`, form);
       setStatus("success");
       setMsg("You're on the list! We'll reach out soon.");
       setForm({ name: "", email: "", phone: "" });
