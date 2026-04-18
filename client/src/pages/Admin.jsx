@@ -1,86 +1,73 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTokens } from "../App";
+import { useAuth } from "../context/AuthContext";
 import LogoMark from "../components/LogoMark";
 
 const API = "/api";
-const ADMIN_PASSWORD = "1234";
 
 export default function Admin() {
   const tk = useTokens();
+  const navigate = useNavigate();
+  const { user, profile, loading } = useAuth();
 
-  const [authed, setAuthed] = useState(false);
-  const [pw, setPw] = useState("");
-  const [error, setError] = useState(false);
   const [waitlist, setWaitlist] = useState([]);
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
   const [loadError, setLoadError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [actionError, setActionError] = useState("");
-  const approvedEntries = waitlist.filter((entry) => entry.status === "approved");
-  const pendingEntries = waitlist.filter((entry) => entry.status !== "approved" && entry.status !== "denied");
+
+  const approvedEntries = waitlist.filter((e) => e.status === "approved");
+  const pendingEntries = waitlist.filter((e) => e.status !== "approved" && e.status !== "denied");
 
   const muted = {
     color: tk.textMuted,
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontFamily: "'Roboto Serif', Georgia, serif",
     fontSize: "1rem",
   };
 
+  // ── Auth guard ─────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (loading) return;
+    if (!user) { navigate("/auth", { replace: true }); return; }
+    if (profile && profile.role !== "admin") { navigate("/dashboard", { replace: true }); }
+  }, [user, profile, loading]);
+
   const loadData = async () => {
-    setLoading(true);
+    setDataLoading(true);
     setLoadError("");
     try {
-      const [waitlistResult, usersResult] = await Promise.allSettled([
-        fetch(`${API}/waitlist`).then(async (response) => {
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Unable to load waitlist");
-          return data;
+      const [waitlistRes, usersRes] = await Promise.allSettled([
+        fetch(`${API}/waitlist`).then(async (r) => {
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Unable to load waitlist");
+          return d;
         }),
-        fetch(`${API}/users`).then(async (response) => {
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || "Unable to load users");
-          return data;
+        fetch(`${API}/users`).then(async (r) => {
+          const d = await r.json();
+          if (!r.ok) throw new Error(d.error || "Unable to load users");
+          return d;
         }),
       ]);
 
-      if (waitlistResult.status === "fulfilled") {
-        setWaitlist(Array.isArray(waitlistResult.value.data) ? waitlistResult.value.data : []);
-      } else {
-        console.error(waitlistResult.reason);
-        setWaitlist([]);
-      }
+      setWaitlist(waitlistRes.status === "fulfilled" && Array.isArray(waitlistRes.value.data) ? waitlistRes.value.data : []);
+      setUsers(usersRes.status === "fulfilled" && Array.isArray(usersRes.value.data) ? usersRes.value.data : []);
 
-      if (usersResult.status === "fulfilled") {
-        setUsers(Array.isArray(usersResult.value.data) ? usersResult.value.data : []);
-      } else {
-        console.error(usersResult.reason);
-        setUsers([]);
-      }
-
-      if (waitlistResult.status === "rejected" || usersResult.status === "rejected") {
-        setLoadError("Some admin data could not be loaded. Please check that the backend is running and available.");
+      if (waitlistRes.status === "rejected" || usersRes.status === "rejected") {
+        setLoadError("Some data could not be loaded. Check that the backend is running.");
       }
     } catch (err) {
-      console.error(err);
       setLoadError("Unable to load admin data right now.");
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = () => {
-    if (pw === ADMIN_PASSWORD) {
-      setAuthed(true);
-      setError(false);
-    } else {
-      setError(true);
+      setDataLoading(false);
     }
   };
 
   useEffect(() => {
-    if (authed) loadData();
-  }, [authed]);
+    if (user && profile?.role === "admin") loadData();
+  }, [user, profile]);
 
   const updateWaitlistStatus = async (id, status) => {
     setUpdatingId(id);
@@ -93,16 +80,11 @@ export default function Admin() {
         body: JSON.stringify({ status }),
       });
       const data = await res.json().catch(() => ({}));
-
       if (!res.ok) throw new Error(data.error || "Unable to update status");
-
-      setWaitlist((current) =>
-        current.map((entry) => (String(entry.id) === String(id) ? data.data : entry))
-      );
+      setWaitlist((curr) => curr.map((e) => (String(e.id) === String(id) ? data.data : e)));
       setActionMessage(`Entry ${status === "approved" ? "approved" : "denied"} successfully.`);
       await loadData();
     } catch (err) {
-      console.error(err);
       setActionError(err.message || "Unable to update this entry right now.");
     } finally {
       setUpdatingId(null);
@@ -110,332 +92,110 @@ export default function Admin() {
   };
 
   const statusPill = (status) => {
-    if (status === "approved") {
-      return { bg: "rgba(61,168,122,0.14)", border: "rgba(61,168,122,0.35)", color: "#3da87a", label: "Approved" };
-    }
-    if (status === "denied") {
-      return { bg: "rgba(224,82,82,0.12)", border: "rgba(224,82,82,0.35)", color: "#e05252", label: "Denied" };
-    }
+    if (status === "approved") return { bg: "rgba(61,168,122,0.14)", border: "rgba(61,168,122,0.35)", color: "#3da87a", label: "Approved" };
+    if (status === "denied") return { bg: "rgba(224,82,82,0.12)", border: "rgba(224,82,82,0.35)", color: "#e05252", label: "Denied" };
     return { bg: tk.goldLight, border: tk.goldBorder, color: tk.gold, label: "Pending" };
   };
 
-  const statCard = {
-    background: tk.surface,
-    border: `1px solid ${tk.goldBorder}`,
-    borderRadius: "22px",
-    padding: "1.25rem 1.35rem",
-    boxShadow: tk.isDark ? "0 24px 60px rgba(0,0,0,0.35)" : "0 18px 50px rgba(31,24,8,0.08)",
-    backdropFilter: "blur(20px)",
+  const statCard = { background: tk.surface, border: `1px solid ${tk.goldBorder}`, borderRadius: "22px", padding: "1.25rem 1.35rem", boxShadow: tk.isDark ? "0 24px 60px rgba(0,0,0,0.35)" : "0 18px 50px rgba(31,24,8,0.08)" };
+  const cardStyle = { ...statCard, padding: "1.5rem" };
+
+  const toggleUserApproval = async (userId, nextApproved) => {
+    setUpdatingId(`user-${userId}`);
+    setActionMessage(""); setActionError("");
+    try {
+      const res = await fetch(`${API}/users/${userId}/approval`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approved: nextApproved }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Update failed");
+      setUsers((curr) => curr.map((u) => (String(u.id) === String(userId) ? data.data : u)));
+      setActionMessage(nextApproved ? "Dashboard access granted." : "Dashboard access revoked.");
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
-  const cardStyle = {
-    ...statCard,
-    padding: "1.5rem",
-  };
-
-  if (!authed) {
+  // Show loading state while auth resolves
+  if (loading || !profile) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "5rem 1.5rem 2rem",
-          background: tk.bg,
-        }}
-      >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: "460px",
-            background: tk.surface,
-            border: `1px solid ${tk.goldBorder}`,
-            borderRadius: "24px",
-            padding: "2.5rem 2.25rem",
-            boxShadow: tk.isDark
-              ? "0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,220,100,0.07)"
-              : "0 24px 60px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
-            backdropFilter: "blur(24px)",
-          }}
-        >
-          <div style={{ textAlign: "center", marginBottom: "1.8rem" }}>
-            <div
-              style={{
-                width: "56px",
-                height: "56px",
-                borderRadius: "50%",
-                background: tk.goldLight,
-                border: `1.5px solid ${tk.goldBorder}`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 1rem",
-              }}
-            >
-              <LogoMark size={26} isDark={tk.isDark} />
-            </div>
-            <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.875rem", margin: "0 0 0.35rem" }}>
-              Admin Login
-            </h2>
-            <p style={{ ...muted, margin: 0 }}>Use the admin password to manage waitlist access.</p>
-          </div>
-
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={pw}
-            onChange={(e) => setPw(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && login()}
-            style={{
-              width: "100%",
-              padding: "0.85rem 1rem",
-              marginBottom: "1rem",
-              borderRadius: "12px",
-              border: `1px solid ${tk.inputBorder}`,
-              background: tk.inputBg,
-              color: tk.textPrimary,
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "1rem",
-              boxSizing: "border-box",
-            }}
-          />
-
-          <button
-            onClick={login}
-            style={{
-              width: "100%",
-              padding: "0.9rem",
-              borderRadius: "12px",
-              border: "none",
-              background: tk.isDark ? "#c9a84c" : "#1a160c",
-              color: tk.isDark ? "#0e0e0f" : "#f9f7f4",
-              cursor: "pointer",
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: "1.0625rem",
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-            }}
-          >
-            Login
-          </button>
-
-          {error && <p style={{ color: "#e05252", margin: "0.85rem 0 0", ...muted }}>Wrong password</p>}
-        </div>
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: tk.textMuted, fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "1.1rem", fontStyle: "italic" }}>
+        Verifying access…
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: "1180px", margin: "0 auto", padding: "5rem 1.5rem 3rem", color: tk.textPrimary }}>
-      <div
-        style={{
-          ...cardStyle,
-          marginBottom: "1.5rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
+      {/* Header */}
+      <div style={{ ...cardStyle, marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
         <div>
-          <p
-            style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              color: tk.gold,
-              letterSpacing: "0.14em",
-              fontSize: "0.8rem",
-              margin: "0 0 0.4rem",
-              textTransform: "uppercase",
-            }}
-          >
-            Legal Ease AI
-          </p>
-          <h1 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2.1rem", margin: "0 0 0.4rem" }}>
-            Admin Dashboard
-          </h1>
-          <p style={{ ...muted, margin: 0 }}>
-            Review waitlist entries, approve platform access, and track registered members.
-          </p>
+          <p style={{ fontFamily: "'Roboto Serif', Georgia, serif", color: tk.gold, letterSpacing: "0.14em", fontSize: "0.8rem", margin: "0 0 0.4rem", textTransform: "uppercase" }}>Legal Ease AI</p>
+          <h1 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "2.1rem", margin: "0 0 0.4rem" }}>Admin Dashboard</h1>
+          <p style={{ ...muted, margin: 0 }}>Review waitlist entries, approve platform access, and track registered members.</p>
         </div>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.85rem 1rem",
-            borderRadius: "16px",
-            background: tk.goldLight,
-            border: `1px solid ${tk.goldBorder}`,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem 1rem", borderRadius: "16px", background: tk.goldLight, border: `1px solid ${tk.goldBorder}` }}>
           <LogoMark size={24} isDark={tk.isDark} />
-          <p style={{ ...muted, margin: 0 }}>Approve users here before they can access the platform.</p>
+          <p style={{ ...muted, margin: 0 }}>Logged in as <strong style={{ color: tk.gold }}>{profile.full_name || user.email}</strong></p>
         </div>
       </div>
 
-      {loadError && (
-        <div
-          style={{
-            ...cardStyle,
-            marginBottom: "1.5rem",
-            border: "1px solid rgba(224,82,82,0.35)",
-            background: tk.isDark ? "rgba(224,82,82,0.1)" : "rgba(224,82,82,0.08)",
-          }}
-        >
-          <p style={{ ...muted, margin: 0, color: "#e05252" }}>{loadError}</p>
-        </div>
-      )}
+      {/* Error/success banners */}
+      {loadError && <div style={{ ...cardStyle, marginBottom: "1.5rem", border: "1px solid rgba(224,82,82,0.35)", background: tk.isDark ? "rgba(224,82,82,0.1)" : "rgba(224,82,82,0.08)" }}><p style={{ ...muted, margin: 0, color: "#e05252" }}>{loadError}</p></div>}
+      {actionError && <div style={{ ...cardStyle, marginBottom: "1.5rem", border: "1px solid rgba(224,82,82,0.35)", background: tk.isDark ? "rgba(224,82,82,0.1)" : "rgba(224,82,82,0.08)" }}><p style={{ ...muted, margin: 0, color: "#e05252" }}>{actionError}</p></div>}
+      {actionMessage && !actionError && <div style={{ ...cardStyle, marginBottom: "1.5rem", border: "1px solid rgba(61,168,122,0.35)", background: tk.isDark ? "rgba(61,168,122,0.12)" : "rgba(61,168,122,0.08)" }}><p style={{ ...muted, margin: 0, color: "#3da87a" }}>{actionMessage}</p></div>}
 
-      {actionError && (
-        <div
-          style={{
-            ...cardStyle,
-            marginBottom: "1.5rem",
-            border: "1px solid rgba(224,82,82,0.35)",
-            background: tk.isDark ? "rgba(224,82,82,0.1)" : "rgba(224,82,82,0.08)",
-          }}
-        >
-          <p style={{ ...muted, margin: 0, color: "#e05252" }}>{actionError}</p>
-        </div>
-      )}
-
-      {actionMessage && !actionError && (
-        <div
-          style={{
-            ...cardStyle,
-            marginBottom: "1.5rem",
-            border: "1px solid rgba(61,168,122,0.35)",
-            background: tk.isDark ? "rgba(61,168,122,0.12)" : "rgba(61,168,122,0.08)",
-          }}
-        >
-          <p style={{ ...muted, margin: 0, color: "#3da87a" }}>{actionMessage}</p>
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <div style={statCard}>
-          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Total waitlist</p>
-          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>{waitlist.length}</h3>
-        </div>
-        <div style={statCard}>
-          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Approved</p>
-          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>
-            {approvedEntries.length}
-          </h3>
-        </div>
-        <div style={statCard}>
-          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Pending review</p>
-          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>
-            {pendingEntries.length}
-          </h3>
-        </div>
-        <div style={statCard}>
-          <p style={{ ...muted, margin: "0 0 0.35rem" }}>Registered users</p>
-          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "2rem", margin: 0 }}>{users.length}</h3>
-        </div>
+      {/* Stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
+        {[
+          ["Total waitlist", waitlist.length, tk.gold],
+          ["Approved", approvedEntries.length, "#3da87a"],
+          ["Pending review", pendingEntries.length, "#D97706"],
+          ["Registered users", users.length, tk.textPrimary],
+          ["Active (can access)", users.filter(u => u.approved).length, "#3da87a"],
+        ].map(([label, val, color]) => (
+          <div key={label} style={statCard}>
+            <p style={{ ...muted, margin: "0 0 0.35rem", fontSize: "0.85rem" }}>{label}</p>
+            <h3 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "2rem", margin: 0, color }}>{val}</h3>
+          </div>
+        ))}
       </div>
 
-      {loading ? (
-        <p style={{ ...muted, fontStyle: "italic" }}>Loading...</p>
+      {dataLoading ? (
+        <p style={{ ...muted, fontStyle: "italic" }}>Loading…</p>
       ) : (
         <>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: "1.5rem",
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+            {/* Pending waitlist */}
             <div style={cardStyle}>
-              <div style={{ marginBottom: "1rem" }}>
-                <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.25rem", margin: 0 }}>Join Waitlist</h2>
-                <p style={{ ...muted, margin: "0.25rem 0 0" }}>Approve in green or deny in red for every entry.</p>
-              </div>
-
+              <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.25rem", margin: "0 0 0.25rem" }}>Pending Requests</h2>
+              <p style={{ ...muted, margin: "0 0 1rem" }}>Approve or deny each entry below.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.9rem" }}>
-                {pendingEntries.length === 0 && <p style={{ ...muted, margin: 0 }}>No pending waitlist entries.</p>}
+                {pendingEntries.length === 0 && <p style={{ ...muted, margin: 0 }}>No pending entries.</p>}
                 {pendingEntries.map((entry) => {
                   const pill = statusPill(entry.status);
                   return (
-                    <div
-                      key={entry.id}
-                      style={{
-                        border: `1px solid ${tk.surfaceBorder}`,
-                        borderRadius: "18px",
-                        padding: "1rem",
-                        background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)",
-                      }}
-                    >
+                    <div key={entry.id} style={{ border: `1px solid ${tk.surfaceBorder}`, borderRadius: "18px", padding: "1rem", background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", alignItems: "flex-start", flexWrap: "wrap" }}>
                         <div>
-                          <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.125rem", margin: "0 0 0.3rem" }}>{entry.name}</h3>
+                          <h3 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.125rem", margin: "0 0 0.3rem" }}>{entry.full_name || entry.name}</h3>
                           <p style={{ ...muted, margin: "0 0 0.2rem" }}>{entry.email}</p>
-                          <p style={{ ...muted, margin: 0 }}>{entry.phone || "No phone shared"}</p>
+                          {entry.reason && <p style={{ ...muted, margin: 0, fontSize: "0.875rem" }}>{entry.reason}</p>}
                         </div>
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            padding: "0.35rem 0.75rem",
-                            borderRadius: "999px",
-                            background: pill.bg,
-                            border: `1px solid ${pill.border}`,
-                            color: pill.color,
-                            fontFamily: "'Cormorant Garamond', Georgia, serif",
-                            fontWeight: 700,
-                            letterSpacing: "0.04em",
-                          }}
-                        >
+                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", padding: "0.35rem 0.75rem", borderRadius: "999px", background: pill.bg, border: `1px solid ${pill.border}`, color: pill.color, fontFamily: "'Roboto Serif', Georgia, serif", fontWeight: 700, letterSpacing: "0.04em" }}>
                           {pill.label}
                         </span>
                       </div>
-
                       <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.95rem", flexWrap: "wrap" }}>
-                        <button
-                          onClick={() => updateWaitlistStatus(entry.id, "approved")}
-                          disabled={updatingId === entry.id}
-                          style={{
-                            border: "1px solid rgba(61,168,122,0.42)",
-                            background: "rgba(61,168,122,0.14)",
-                            color: "#3da87a",
-                            borderRadius: "10px",
-                            padding: "0.7rem 1rem",
-                            cursor: updatingId === entry.id ? "not-allowed" : "pointer",
-                            fontFamily: "'Cormorant Garamond', Georgia, serif",
-                            fontSize: "0.95rem",
-                            fontWeight: 700,
-                            minWidth: "112px",
-                          }}
-                        >
-                          {updatingId === entry.id ? "Saving..." : "Approve"}
+                        <button onClick={() => updateWaitlistStatus(entry.id, "approved")} disabled={updatingId === entry.id} style={{ border: "1px solid rgba(61,168,122,0.42)", background: "rgba(61,168,122,0.14)", color: "#3da87a", borderRadius: "10px", padding: "0.7rem 1rem", cursor: updatingId === entry.id ? "not-allowed" : "pointer", fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "0.95rem", fontWeight: 700, minWidth: "112px" }}>
+                          {updatingId === entry.id ? "Saving…" : "Approve"}
                         </button>
-                        <button
-                          onClick={() => updateWaitlistStatus(entry.id, "denied")}
-                          disabled={updatingId === entry.id}
-                          style={{
-                            border: "1px solid rgba(224,82,82,0.42)",
-                            background: "rgba(224,82,82,0.12)",
-                            color: "#e05252",
-                            borderRadius: "10px",
-                            padding: "0.7rem 1rem",
-                            cursor: updatingId === entry.id ? "not-allowed" : "pointer",
-                            fontFamily: "'Cormorant Garamond', Georgia, serif",
-                            fontSize: "0.95rem",
-                            fontWeight: 700,
-                            minWidth: "112px",
-                          }}
-                        >
-                          {updatingId === entry.id ? "Saving..." : "Deny"}
+                        <button onClick={() => updateWaitlistStatus(entry.id, "denied")} disabled={updatingId === entry.id} style={{ border: "1px solid rgba(224,82,82,0.42)", background: "rgba(224,82,82,0.12)", color: "#e05252", borderRadius: "10px", padding: "0.7rem 1rem", cursor: updatingId === entry.id ? "not-allowed" : "pointer", fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "0.95rem", fontWeight: 700, minWidth: "112px" }}>
+                          {updatingId === entry.id ? "Saving…" : "Deny"}
                         </button>
                       </div>
                     </div>
@@ -444,55 +204,62 @@ export default function Admin() {
               </div>
             </div>
 
+            {/* Approved log */}
             <div style={cardStyle}>
-              <div style={{ marginBottom: "1rem" }}>
-                <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.25rem", margin: 0 }}>Accepted Waitlist Log</h2>
-                <p style={{ ...muted, margin: "0.25rem 0 0" }}>Admin accepted entries appear here separately.</p>
-              </div>
-
+              <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.25rem", margin: "0 0 0.25rem" }}>Approved Log</h2>
+              <p style={{ ...muted, margin: "0 0 1rem" }}>All approved waitlist entries.</p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
-                {approvedEntries.length === 0 && <p style={{ ...muted, margin: 0 }}>No accepted waitlist entries yet.</p>}
+                {approvedEntries.length === 0 && <p style={{ ...muted, margin: 0 }}>No approved entries yet.</p>}
                 {approvedEntries.map((entry) => (
-                  <div
-                    key={entry.id}
-                    style={{
-                      border: `1px solid ${tk.surfaceBorder}`,
-                      borderRadius: "16px",
-                      padding: "0.95rem 1rem",
-                      background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)",
-                    }}
-                  >
-                    <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.05rem", margin: "0 0 0.25rem" }}>{entry.name}</h3>
-                    <p style={{ ...muted, margin: "0 0 0.2rem" }}>{entry.email}</p>
-                    <p style={{ ...muted, margin: 0 }}>{entry.phone || "No phone shared"}</p>
+                  <div key={entry.id} style={{ border: `1px solid ${tk.surfaceBorder}`, borderRadius: "16px", padding: "0.95rem 1rem", background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)" }}>
+                    <h3 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.05rem", margin: "0 0 0.25rem" }}>{entry.full_name || entry.name}</h3>
+                    <p style={{ ...muted, margin: 0 }}>{entry.email}</p>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
+          {/* Registered users */}
           <div style={{ ...cardStyle, marginTop: "1.5rem" }}>
-            <div style={{ marginBottom: "1rem" }}>
-              <h2 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.25rem", margin: 0 }}>Registered Users</h2>
-              <p style={{ ...muted, margin: "0.25rem 0 0" }}>Login and registration now work independently from waitlist approval.</p>
-            </div>
-
+            <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.25rem", margin: "0 0 0.25rem" }}>Registered Users</h2>
+            <p style={{ ...muted, margin: "0 0 1rem" }}>All users who have signed up via Supabase Auth.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
               {users.length === 0 && <p style={{ ...muted, margin: 0 }}>No registered users yet.</p>}
-              {users.map((user) => (
-                <div
-                  key={user.id}
-                  style={{
-                    border: `1px solid ${tk.surfaceBorder}`,
-                    borderRadius: "16px",
-                    padding: "0.95rem 1rem",
-                    background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)",
-                  }}
-                >
-                  <h3 style={{ fontFamily: "'Noto Serif', Georgia, serif", fontSize: "1.05rem", margin: "0 0 0.25rem" }}>{user.username}</h3>
-                  <p style={{ ...muted, margin: 0 }}>{user.email}</p>
-                </div>
-              ))}
+              {users.map((u) => {
+                const isAdmin = u.role === "admin";
+                const isBusy = updatingId === `user-${u.id}`;
+                return (
+                  <div key={u.id} style={{ border: `1px solid ${tk.surfaceBorder}`, borderRadius: "16px", padding: "0.95rem 1rem", background: tk.isDark ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.55)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap", marginBottom: "0.2rem" }}>
+                        <h3 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.05rem", margin: 0 }}>{u.full_name || u.username || "—"}</h3>
+                        <span style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", padding: "0.15rem 0.55rem", borderRadius: "999px", background: isAdmin ? tk.goldLight : "rgba(100,100,100,0.1)", color: isAdmin ? tk.gold : tk.textMuted, border: `1px solid ${isAdmin ? tk.goldBorder : "rgba(100,100,100,0.2)"}` }}>
+                          {u.role?.toUpperCase() || "USER"}
+                        </span>
+                        <span style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.08em", padding: "0.15rem 0.55rem", borderRadius: "999px", background: u.approved ? "rgba(61,168,122,0.14)" : "rgba(224,82,82,0.10)", color: u.approved ? "#3da87a" : "#e05252", border: `1px solid ${u.approved ? "rgba(61,168,122,0.35)" : "rgba(224,82,82,0.30)"}` }}>
+                          {u.approved ? "✓ ACTIVE" : "✕ NO ACCESS"}
+                        </span>
+                      </div>
+                      <p style={{ ...muted, margin: 0, fontSize: "0.85rem" }}>{u.email}</p>
+                    </div>
+                    {!isAdmin && (
+                      <button onClick={() => toggleUserApproval(u.id, !u.approved)} disabled={isBusy}
+                        style={{
+                          border: u.approved ? "1px solid rgba(224,82,82,0.4)" : "1px solid rgba(61,168,122,0.4)",
+                          background: u.approved ? "rgba(224,82,82,0.10)" : "rgba(61,168,122,0.12)",
+                          color: u.approved ? "#e05252" : "#3da87a",
+                          borderRadius: "10px", padding: "0.5rem 0.9rem", cursor: isBusy ? "not-allowed" : "pointer",
+                          fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "0.85rem", fontWeight: 700,
+                          minWidth: "110px", transition: "opacity .2s",
+                          opacity: isBusy ? 0.6 : 1,
+                        }}>
+                        {isBusy ? "Saving…" : u.approved ? "Revoke" : "Grant Access"}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </>

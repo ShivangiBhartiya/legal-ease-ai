@@ -5,7 +5,7 @@ const ENQUIRY_TYPES = ["General Question","Partnership","Bug Report","Feedback"]
 
 function FieldError({ message }) {
   if(!message) return null;
-  return <p style={{ fontSize:"0.75rem", color:"#e05252", marginTop:"4px", fontFamily:"'Cormorant Garamond', Georgia, serif" }}>{message}</p>;
+  return <p style={{ fontSize:"0.75rem", color:"#e05252", marginTop:"4px", fontFamily:"'Roboto Serif', Georgia, serif" }}>{message}</p>;
 }
 
 // Contact info cards
@@ -39,7 +39,7 @@ export default function Contact() {
     borderRadius:"12px",
     padding:"0.75rem 1rem",
     fontSize:"0.9375rem",
-    fontFamily:"'Cormorant Garamond', Georgia, serif",
+    fontFamily:"'Roboto Serif', Georgia, serif",
     color:tk.textPrimary,
     outline:"none",
     boxSizing:"border-box",
@@ -63,7 +63,7 @@ export default function Contact() {
   };
 
   const labelStyle = {
-    fontFamily:"'Cormorant Garamond', Georgia, serif",
+    fontFamily:"'Roboto Serif', Georgia, serif",
     fontSize:"0.7rem", color:tk.textMuted,
     textTransform:"uppercase", letterSpacing:"0.1em", fontWeight:600,
   };
@@ -100,10 +100,10 @@ export default function Contact() {
               margin:"0 auto",
             }}>
               <span style={{width:"5px",height:"5px",borderRadius:"50%",background:tk.gold,display:"block"}}/>
-              <span style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:"0.7rem", letterSpacing:"0.15em", textTransform:"uppercase", color:tk.gold, fontWeight:600 }}>Get in touch</span>
+              <span style={{ fontFamily:"'Roboto Serif', Georgia, serif", fontSize:"0.7rem", letterSpacing:"0.15em", textTransform:"uppercase", color:tk.gold, fontWeight:600 }}>Get in touch</span>
             </div>
-            <h1 style={{ fontFamily:"'Noto Serif', Georgia, serif", fontWeight:700, color:tk.textPrimary, fontSize:"clamp(2.25rem, 5vw, 3.5rem)", letterSpacing:"-0.035em", lineHeight:1.05, margin:0 }}>Contact Us</h1>
-            <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.textSecondary, fontSize:"1.125rem", fontWeight:300, maxWidth:"340px", lineHeight:1.65, margin:"0 auto" }}>
+            <h1 style={{ fontFamily:"'DM Serif Display', Georgia, serif", fontWeight:700, color:tk.textPrimary, fontSize:"clamp(2.25rem, 5vw, 3.5rem)", letterSpacing:"-0.035em", lineHeight:1.05, margin:0 }}>Contact Us</h1>
+            <p style={{ fontFamily:"'Roboto Serif', Georgia, serif", color:tk.textSecondary, fontSize:"1.125rem", fontWeight:300, maxWidth:"340px", lineHeight:1.65, margin:"0 auto" }}>
               We would love to hear from you. Usually reply within 24 hours.
             </p>
           </div>
@@ -121,9 +121,9 @@ export default function Contact() {
                 boxShadow: tk.isDark ? "0 4px 20px rgba(0,0,0,0.35)" : "0 2px 16px rgba(0,0,0,0.05)",
               }}>
                 <div style={{ fontSize:"1.25rem", marginBottom:"0.375rem" }}>{card.icon}</div>
-                <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:"0.7rem", textTransform:"uppercase", letterSpacing:"0.1em", color:tk.textSecondary, fontWeight:700, margin:"0 0 0.25rem" }}>{card.label}</p>
-                <p style={{ fontFamily:"'Noto Serif', Georgia, serif", fontSize:"0.875rem", fontWeight:700, color:tk.gold, margin:"0 0 0.125rem" }}>{card.value}</p>
-                <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:"0.8rem", color:tk.textSecondary, fontWeight:500, margin:0 }}>{card.sub}</p>
+                <p style={{ fontFamily:"'Roboto Serif', Georgia, serif", fontSize:"0.7rem", textTransform:"uppercase", letterSpacing:"0.1em", color:tk.textSecondary, fontWeight:700, margin:"0 0 0.25rem" }}>{card.label}</p>
+                <p style={{ fontFamily:"'DM Serif Display', Georgia, serif", fontSize:"0.875rem", fontWeight:700, color:tk.gold, margin:"0 0 0.125rem" }}>{card.value}</p>
+                <p style={{ fontFamily:"'Roboto Serif', Georgia, serif", fontSize:"0.8rem", color:tk.textSecondary, fontWeight:500, margin:0 }}>{card.sub}</p>
               </div>
             ))}
           </div>
@@ -144,10 +144,10 @@ export default function Contact() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/>
                   </svg>
                 </div>
-                <h2 style={{ fontFamily:"'Noto Serif', Georgia, serif", fontWeight:700, color:tk.textPrimary, fontSize:"1.5rem", letterSpacing:"-0.02em", margin:0 }}>Message sent!</h2>
-                <p style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", color:tk.textSecondary, fontSize:"1.0625rem", fontWeight:500, lineHeight:1.65, margin:0 }}>Thanks for reaching out. We will get back to you soon.</p>
+                <h2 style={{ fontFamily:"'DM Serif Display', Georgia, serif", fontWeight:700, color:tk.textPrimary, fontSize:"1.5rem", letterSpacing:"-0.02em", margin:0 }}>Message sent!</h2>
+                <p style={{ fontFamily:"'Roboto Serif', Georgia, serif", color:tk.textSecondary, fontSize:"1.0625rem", fontWeight:500, lineHeight:1.65, margin:0 }}>Thanks for reaching out. We will get back to you soon.</p>
                 <button onClick={()=>{ setSent(false); setForm({name:"",email:"",enquiry:"",message:""}); }}
-                  style={{ fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:"0.9375rem", fontWeight:600, color:tk.gold, background:tk.goldLight, border:`1px solid ${tk.goldBorder}`, borderRadius:"999px", padding:"0.45rem 1.25rem", cursor:"pointer", transition:"all .2s" }}
+                  style={{ fontFamily:"'Roboto Serif', Georgia, serif", fontSize:"0.9375rem", fontWeight:600, color:tk.gold, background:tk.goldLight, border:`1px solid ${tk.goldBorder}`, borderRadius:"999px", padding:"0.45rem 1.25rem", cursor:"pointer", transition:"all .2s" }}
                   onMouseEnter={e=>{e.currentTarget.style.background=tk.isDark?"rgba(201,168,76,.22)":"rgba(160,120,40,.15)";}}
                   onMouseLeave={e=>{e.currentTarget.style.background=tk.goldLight;}}>
                   Send another
@@ -182,7 +182,7 @@ export default function Contact() {
                       <button key={type}
                         onClick={()=>setForm({...form,enquiry:form.enquiry===type?"":type})}
                         style={{
-                          fontFamily:"'Cormorant Garamond', Georgia, serif", fontSize:"0.875rem",
+                          fontFamily:"'Roboto Serif', Georgia, serif", fontSize:"0.875rem",
                           padding:"0.35rem 0.875rem", borderRadius:"999px",
                           border:`1px solid ${form.enquiry===type?tk.goldBorder:tk.inputBorder}`,
                           background: form.enquiry===type ? tk.goldLight : "transparent",
@@ -208,7 +208,7 @@ export default function Contact() {
                 </div>
                 <button onClick={handleSubmit} disabled={submitting} style={{
                   width:"100%", padding:"0.875rem", borderRadius:"12px",
-                  fontFamily:"'Cormorant Garamond', Georgia, serif", fontWeight:600, fontSize:"1rem",
+                  fontFamily:"'Roboto Serif', Georgia, serif", fontWeight:600, fontSize:"1rem",
                   letterSpacing:"0.04em", border:"none", cursor:submitting?"not-allowed":"pointer",
                   opacity:submitting?0.5:1, background:tk.btnBg, color:tk.btnText,
                   display:"flex", alignItems:"center", justifyContent:"center", gap:"0.5rem",

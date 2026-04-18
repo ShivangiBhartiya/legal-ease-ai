@@ -1,63 +1,42 @@
-import { useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import axios from "axios";
 import { useTokens } from "../App";
 
 const API = "/api";
 
+const FEATURES = [
+  {
+    icon: "⚡",
+    title: "Instant Analysis",
+    desc: "Complete clause breakdown in under 5 seconds.",
+  },
+  {
+    icon: "📖",
+    title: "Plain English",
+    desc: "Legal jargon translated for real people.",
+  },
+  {
+    icon: "🛡️",
+    title: "Risk Flags",
+    desc: "Unfavorable or dangerous terms highlighted automatically.",
+  },
+];
+
 export default function Home() {
-  const [text, setText] = useState("");
-  const [fileName, setFileName] = useState(null);
-  const [dragging, setDragging] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef(null);
   const tk = useTokens();
 
   // Waitlist state
-  const [wForm, setWForm] = useState({ name: "", email: "", phone: "" });
+  const [wForm, setWForm] = useState({ full_name: "", email: "", reason: "" });
   const [wStatus, setWStatus] = useState(null);
   const [wMsg, setWMsg] = useState("");
   const [wLoading, setWLoading] = useState(false);
-
-  const charLimit = 5000;
-  const hasInput = text.trim() || fileName;
-
-  const handleFileChange = e => { const f=e.target.files[0]; if(f) setFileName(f.name); };
-  const handleRemoveFile = e => { e.stopPropagation(); setFileName(null); if(fileInputRef.current) fileInputRef.current.value=""; };
-  const handleDrop = e => { e.preventDefault(); setDragging(false); const f=e.dataTransfer.files[0]; if(f) setFileName(f.name); };
-  const handleAnalyze = async () => {
-    if (!hasInput) return;
-    setLoading(true);
-    try {
-      let res;
-      if (fileInputRef.current?.files?.[0]) {
-        const formData = new FormData();
-        formData.append("file", fileInputRef.current.files[0]);
-        res = await axios.post("http://localhost:5000/api/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-      } else {
-        res = await axios.post("http://localhost:5000/api/analyze-text", { text });
-      }
-      const stored = localStorage.getItem("legal-user");
-      if (stored) {
-        sessionStorage.setItem("legal-analysis", JSON.stringify(res.data.analysis));
-        window.location.href = "/dashboard";
-      } else {
-        window.location.href = "/auth";
-      }
-    } catch (err) {
-      alert(err.response?.data?.error || "Analysis failed. Make sure the backend is running.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleWChange = (e) =>
     setWForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleWSubmit = async () => {
-    if (!wForm.name || !wForm.email) {
+    if (!wForm.full_name || !wForm.email) {
       setWStatus("error");
       setWMsg("Name and email are required.");
       return;
@@ -67,8 +46,8 @@ export default function Home() {
     try {
       await axios.post(`${API}/joinwaitlist`, wForm);
       setWStatus("success");
-      setWMsg("You're on the list! We'll reach out soon. 🎉");
-      setWForm({ name: "", email: "", phone: "" });
+      setWMsg("You're on the list! We'll reach out soon.");
+      setWForm({ full_name: "", email: "", reason: "" });
     } catch (err) {
       setWStatus("error");
       setWMsg(
@@ -88,7 +67,7 @@ export default function Home() {
     borderRadius: "10px",
     padding: "0.75rem 1rem",
     fontSize: "0.9375rem",
-    fontFamily: "'Cormorant Garamond', Georgia, serif",
+    fontFamily: "'Roboto Serif', Georgia, serif",
     color: tk.textPrimary,
     outline: "none",
     boxSizing: "border-box",
@@ -96,348 +75,482 @@ export default function Home() {
   };
 
   return (
-    <main style={{ position:"relative", minHeight:"100vh" }}>
+    <main style={{ position: "relative", minHeight: "100vh" }}>
       <style>{`
         textarea::placeholder { color: ${tk.textMuted}; }
         input::placeholder { color: ${tk.textMuted}; }
         @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
         @keyframes heroIn { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
-        .hero-line1 { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .05s both; }
-        .hero-line2 { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .15s both; }
-        .hero-sub   { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .25s both; }
-        .hero-card  { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .35s both; }
-        .hero-trust { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .45s both; }
-        .waitlist-card { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .55s both; }
+        .hero-badge   { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .05s both; }
+        .hero-line1   { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .12s both; }
+        .hero-line2   { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .20s both; }
+        .hero-sub     { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .28s both; }
+        .hero-cta     { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .36s both; }
+        .hero-trust   { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .44s both; }
+        .feat-card    { animation: heroIn .7s cubic-bezier(.22,1,.36,1) both; }
+        .feat-card:nth-child(1) { animation-delay: .52s; }
+        .feat-card:nth-child(2) { animation-delay: .60s; }
+        .feat-card:nth-child(3) { animation-delay: .68s; }
+        .waitlist-card { animation: heroIn .7s cubic-bezier(.22,1,.36,1) .76s both; }
       `}</style>
 
-      <section style={{
-        position:"relative", zIndex:1,
-        minHeight:"100vh",
-        display:"flex", flexDirection:"column",
-        alignItems:"center", justifyContent:"center",
-        padding:"6rem 1.5rem 4rem",
-      }}>
-        <div style={{
-          width:"100%", maxWidth:"640px",
-          margin:"0 auto",
-          display:"flex", flexDirection:"column",
-          alignItems:"center", textAlign:"center", gap:"1.1rem",
-        }}>
-
+      {/* ─── Hero Section ─────────────────────────────────────── */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 1,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "6rem 1.5rem 4rem",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "680px",
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: "1.25rem",
+          }}
+        >
           {/* Badge */}
-          <span className="hero-line1" style={{
-            display:"inline-flex", alignItems:"center", gap:"0.375rem",
-            background:tk.goldLight,
-            border:`1px solid ${tk.goldBorder}`,
-            color:tk.gold,
-            fontFamily:"'Cormorant Garamond', Georgia, serif",
-            fontSize:"0.75rem", fontWeight:600,
-            padding:"0.3rem 1rem", borderRadius:"999px",
-            letterSpacing:"0.1em", textTransform:"uppercase",
-          }}>
-            <span style={{
-              width:"6px", height:"6px", borderRadius:"50%",
-              backgroundColor:tk.success,
-              animation:"pulse-dot 2s infinite", display:"inline-block",
-            }}/>
-            AI-powered analysis
+          <span
+            className="hero-badge"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "0.375rem",
+              background: tk.goldLight,
+              border: `1px solid ${tk.goldBorder}`,
+              color: tk.gold,
+              fontFamily: "'Roboto Serif', Georgia, serif",
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              padding: "0.3rem 1rem",
+              borderRadius: "999px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+          >
+            <span
+              style={{
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: tk.success,
+                animation: "pulse-dot 2s infinite",
+                display: "inline-block",
+              }}
+            />
+            AI-powered legal analysis
           </span>
 
           {/* Heading */}
-          <h1 style={{ margin:0 }}>
-            <span className="hero-line1" style={{
-              display:"block",
-              fontFamily:"'Noto Serif', Georgia, serif",
-              fontWeight:700, color:tk.textPrimary,
-              fontSize:"clamp(1.875rem, 4vw, 3.25rem)",
-              letterSpacing:"-0.03em", lineHeight:1.1,
-            }}>Understand Legal Documents</span>
-            <span className="hero-line2" style={{
-              display:"block",
-              fontFamily:"'Noto Serif', Georgia, serif",
-              fontWeight:500, fontStyle:"italic",
-              color:tk.gold,
-              fontSize:"clamp(1.875rem, 4vw, 3.25rem)",
-              letterSpacing:"-0.02em", lineHeight:1.1,
-            }}>in Seconds</span>
-          </h1>
-
-          <p className="hero-sub" style={{
-            fontFamily:"'Cormorant Garamond', Georgia, serif",
-            color:tk.textSecondary, fontSize:"1.175rem", fontWeight:450,
-            maxWidth:"380px", lineHeight:1.65,
-          }}>
-            No jargon. Just clear legal explanations powered by AI.
-          </p>
-
-          {/* Ghost Card */}
-          <div className="hero-card" style={{
-            width:"100%", marginTop:"0.875rem",
-            background:tk.surface,
-            backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
-            border:`1px solid ${tk.surfaceBorder}`,
-            borderRadius:"20px",
-            padding:"1.875rem",
-            boxShadow: tk.isDark
-              ? "0 32px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,220,100,.06)"
-              : "0 12px 48px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.9)",
-            textAlign:"left",
-            display:"flex", flexDirection:"column", gap:"1rem",
-          }}>
-
-            {/* Textarea */}
-            <div style={{ position:"relative" }}>
-              <textarea
-                value={text}
-                onChange={e=>e.target.value.length<=charLimit&&setText(e.target.value)}
-                rows={7}
-                placeholder="Paste your legal text here…"
-                style={{
-                  width:"100%",
-                  background:tk.inputBg,
-                  border:`1px solid ${tk.inputBorder}`,
-                  borderRadius:"12px",
-                  padding:"0.875rem 1rem",
-                  fontSize:"0.9375rem",
-                  fontFamily:"'Cormorant Garamond', Georgia, serif",
-                  color:tk.textPrimary,
-                  resize:"none", outline:"none",
-                  lineHeight:1.65, boxSizing:"border-box",
-                  transition:"border-color .25s",
-                }}
-                onFocus={e=>e.target.style.borderColor=tk.gold}
-                onBlur={e=>e.target.style.borderColor=tk.inputBorder}
-              />
-              <span style={{
-                position:"absolute", bottom:"12px", right:"12px",
-                fontFamily:"'Cormorant Garamond', Georgia, serif",
-                fontSize:"0.75rem",
-                color:text.length>charLimit*.9?"#f59e0b":tk.textSecondary,
-                pointerEvents:"none",
-              }}>{text.length}/{charLimit}</span>
-            </div>
-
-            {/* Divider */}
-            <div style={{ display:"flex", alignItems:"center", gap:"0.75rem" }}>
-              <div style={{ flex:1, height:"1px", background:tk.divider }}/>
-              <span style={{
-                fontFamily:"'Cormorant Garamond', Georgia, serif",
-                fontSize:"0.8rem", color:tk.textSecondary, letterSpacing:"0.04em", fontWeight:500,
-              }}>or upload a file</span>
-              <div style={{ flex:1, height:"1px", background:tk.divider }}/>
-            </div>
-
-            {/* Drop zone */}
-            <div
-              onDragOver={e=>{e.preventDefault();setDragging(true);}}
-              onDragLeave={()=>setDragging(false)}
-              onDrop={handleDrop}
-              onClick={()=>!fileName&&fileInputRef.current?.click()}
+          <h1 style={{ margin: 0 }}>
+            <span
+              className="hero-line1"
               style={{
-                borderRadius:"12px",
-                border:`2px dashed ${
-                  fileName ? tk.goldBorder
-                  : dragging ? tk.gold
-                  : tk.inputBorder
-                }`,
-                padding:"1rem 1.25rem",
-                display:"flex", alignItems:"center", justifyContent:"space-between", gap:"0.75rem",
-                cursor:fileName?"default":"pointer",
-                background: dragging ? tk.goldLight : "transparent",
-                transition:"border-color .2s, background .2s",
+                display: "block",
+                fontFamily: "'DM Serif Display', Georgia, serif",
+                fontWeight: 400,
+                color: tk.textPrimary,
+                fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
               }}
             >
-              <input ref={fileInputRef} type="file" accept=".pdf,.txt"
-                style={{display:"none"}} onChange={handleFileChange}/>
-              <div style={{ display:"flex", alignItems:"center", gap:"0.75rem", minWidth:0 }}>
-                <svg width="18" height="18" fill="none" stroke={tk.gold} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                    d="M12 16V4m0 0L8 8m4-4 4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
-                </svg>
-                {fileName ? (
-                  <p style={{
-                    fontFamily:"'Cormorant Garamond', Georgia, serif",
-                    fontSize:"0.9375rem", color:tk.textPrimary, fontWeight:500,
-                    overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                  }}>{fileName}</p>
-                ) : (
-                  <p style={{
-                    fontFamily:"'Cormorant Garamond', Georgia, serif",
-                    fontSize:"0.9375rem", color:tk.textSecondary, fontWeight:450,
-                  }}>
-                    <span style={{color:tk.textPrimary, fontWeight:600}}>Upload your PDF</span>
-                    {" "}— or drag & drop
-                  </p>
-                )}
-              </div>
-              {fileName && (
-                <button onClick={handleRemoveFile} style={{
-                  flexShrink:0, width:"22px", height:"22px", borderRadius:"50%",
-                  background:tk.goldLight, border:`1px solid ${tk.goldBorder}`,
-                  color:tk.textSecondary, cursor:"pointer",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  fontSize:"0.65rem", fontWeight:700, transition:"all .2s",
-                }}
-                  onMouseEnter={e=>{e.currentTarget.style.background="rgba(224,82,82,.15)"; e.currentTarget.style.color="#e05252";}}
-                  onMouseLeave={e=>{e.currentTarget.style.background=tk.goldLight; e.currentTarget.style.color=tk.textSecondary;}}
-                >✕</button>
-              )}
-            </div>
-
-            <p style={{
-              fontFamily:"'Cormorant Garamond', Georgia, serif",
-              fontSize:"0.8rem", color:tk.textSecondary, marginTop:"-0.25rem", fontWeight:500,
-            }}>Accepted: PDF, TXT</p>
-
-            {/* Analyse button */}
-            <button onClick={handleAnalyze} disabled={!hasInput||loading} style={{
-              width:"100%", padding:"0.85rem",
-              borderRadius:"12px",
-              fontFamily:"'Cormorant Garamond', Georgia, serif",
-              fontWeight:600, fontSize:"1rem",
-              letterSpacing:"0.04em", border:"none",
-              cursor:hasInput&&!loading?"pointer":"not-allowed",
-              opacity:!hasInput||loading?0.3:1,
-              background:tk.btnBg, color:tk.btnText,
-              display:"flex", alignItems:"center", justifyContent:"center", gap:"0.5rem",
-              transition:"opacity .25s, transform .15s",
-            }}
-              onMouseEnter={e=>hasInput&&!loading&&(e.currentTarget.style.opacity="0.82")}
-              onMouseLeave={e=>e.currentTarget.style.opacity=!hasInput||loading?"0.3":"1"}
+              Understand Legal Documents
+            </span>
+            <span
+              className="hero-line2"
+              style={{
+                display: "block",
+                fontFamily: "'DM Serif Display', Georgia, serif",
+                fontWeight: 400,
+                fontStyle: "italic",
+                color: tk.gold,
+                fontSize: "clamp(2rem, 5vw, 3.5rem)",
+                letterSpacing: "-0.02em",
+                lineHeight: 1.1,
+              }}
             >
-              {loading ? (
-                <>
-                  <svg style={{animation:"spin 1s linear infinite",width:"15px",height:"15px"}} fill="none" viewBox="0 0 24 24">
-                    <circle style={{opacity:.25}} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path style={{opacity:.75}} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                  </svg>
-                  Analysing…
-                </>
-              ) : "Analyse Document"}
-            </button>
-          </div>
+              in Seconds
+            </span>
+          </h1>
 
-          <p className="hero-trust" style={{
-            fontFamily:"'Cormorant Garamond', Georgia, serif",
-            fontSize:"0.875rem", color:tk.textSecondary, fontWeight:500,
-          }}>
-            Your document is never stored · Analysis happens in real time
+          {/* Subtitle */}
+          <p
+            className="hero-sub"
+            style={{
+              fontFamily: "'Roboto Serif', Georgia, serif",
+              color: tk.textSecondary,
+              fontSize: "1.125rem",
+              fontWeight: 400,
+              maxWidth: "480px",
+              lineHeight: 1.65,
+              margin: 0,
+            }}
+          >
+            No jargon. Just clear, plain-English explanations of contracts,
+            leases, and agreements — powered by AI.
           </p>
 
-          {/* ── Waitlist Section ── */}
-          <div className="waitlist-card" style={{
-            width:"100%", marginTop:"1.5rem",
-            background:tk.surface,
-            backdropFilter:"blur(24px)", WebkitBackdropFilter:"blur(24px)",
-            border:`1px solid ${tk.surfaceBorder}`,
-            borderRadius:"20px",
-            padding:"1.875rem",
-            boxShadow: tk.isDark
-              ? "0 32px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,220,100,.06)"
-              : "0 12px 48px rgba(0,0,0,.07), inset 0 1px 0 rgba(255,255,255,.9)",
-            textAlign:"left",
-          }}>
-            {/* Waitlist heading */}
-            <div style={{ marginBottom:"1.25rem" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:"0.5rem", marginBottom:"0.375rem" }}>
-                <span style={{
-                  display:"inline-flex", alignItems:"center", gap:"0.375rem",
-                  background:tk.goldLight, border:`1px solid ${tk.goldBorder}`,
-                  color:tk.gold,
-                  fontFamily:"'Cormorant Garamond', Georgia, serif",
-                  fontSize:"0.7rem", fontWeight:600,
-                  padding:"0.2rem 0.75rem", borderRadius:"999px",
-                  letterSpacing:"0.1em", textTransform:"uppercase",
-                }}>
-                  <span style={{ width:"5px", height:"5px", borderRadius:"50%", backgroundColor:tk.success, animation:"pulse-dot 2s infinite", display:"inline-block" }}/>
-                  Early Access
-                </span>
-              </div>
-              <h2 style={{
-                fontFamily:"'Noto Serif', Georgia, serif",
-                fontWeight:700, fontSize:"clamp(1.25rem, 3vw, 1.625rem)",
-                color:tk.textPrimary, letterSpacing:"-0.02em", margin:"0 0 0.375rem",
-              }}>Join the Waitlist</h2>
-              <p style={{
-                fontFamily:"'Cormorant Garamond', Georgia, serif",
-                color:tk.textSecondary, fontSize:"1rem", margin:0, lineHeight:1.6,
-              }}>
-                Be the first to access Legal Ease AI when we launch.
-              </p>
-            </div>
-
-            {/* Form */}
-            <div style={{ display:"flex", flexDirection:"column", gap:"0.875rem" }}>
-              <input
-                name="name"
-                placeholder="Full Name *"
-                value={wForm.name}
-                onChange={handleWChange}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = tk.gold}
-                onBlur={e => e.target.style.borderColor = tk.inputBorder}
-              />
-              <input
-                name="email"
-                type="email"
-                placeholder="Email Address *"
-                value={wForm.email}
-                onChange={handleWChange}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = tk.gold}
-                onBlur={e => e.target.style.borderColor = tk.inputBorder}
-              />
-              <input
-                name="phone"
-                placeholder="Phone Number (optional)"
-                value={wForm.phone}
-                onChange={handleWChange}
-                style={inputStyle}
-                onFocus={e => e.target.style.borderColor = tk.gold}
-                onBlur={e => e.target.style.borderColor = tk.inputBorder}
-              />
-
-              {wStatus && (
-                <p style={{
-                  fontFamily:"'Cormorant Garamond', Georgia, serif",
-                  fontSize:"0.9375rem",
-                  color: wStatus === "success" ? tk.success : tk.danger,
-                  margin:0, fontWeight:500,
-                }}>{wMsg}</p>
-              )}
-
-              <button
-                onClick={handleWSubmit}
-                disabled={wLoading}
-                style={{
-                  width:"100%", padding:"0.85rem",
-                  borderRadius:"12px",
-                  fontFamily:"'Cormorant Garamond', Georgia, serif",
-                  fontWeight:600, fontSize:"1rem",
-                  letterSpacing:"0.04em", border:"none",
-                  cursor: wLoading ? "not-allowed" : "pointer",
-                  opacity: wLoading ? 0.6 : 1,
-                  background:tk.btnBg, color:tk.btnText,
-                  display:"flex", alignItems:"center", justifyContent:"center", gap:"0.5rem",
-                  transition:"opacity .25s",
-                }}
-                onMouseEnter={e => !wLoading && (e.currentTarget.style.opacity = "0.82")}
-                onMouseLeave={e => e.currentTarget.style.opacity = wLoading ? "0.6" : "1"}
-              >
-                {wLoading ? (
-                  <>
-                    <svg style={{animation:"spin 1s linear infinite",width:"15px",height:"15px"}} fill="none" viewBox="0 0 24 24">
-                      <circle style={{opacity:.25}} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path style={{opacity:.75}} fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                    </svg>
-                    Submitting…
-                  </>
-                ) : "Join Waitlist →"}
-              </button>
-            </div>
+          {/* CTA Button */}
+          <div
+            className="hero-cta"
+            style={{
+              display: "flex",
+              gap: "0.75rem",
+              flexWrap: "wrap",
+              justifyContent: "center",
+              marginTop: "0.75rem",
+            }}
+          >
+            <Link
+              to="/auth"
+              style={{
+                padding: "0.85rem 1.75rem",
+                borderRadius: "12px",
+                fontFamily: "'Roboto Serif', Georgia, serif",
+                fontWeight: 600,
+                fontSize: "1rem",
+                letterSpacing: "0.04em",
+                background: tk.btnBg,
+                color: tk.btnText,
+                textDecoration: "none",
+                transition: "opacity .2s, transform .15s",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = "0.85";
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = "1";
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              Get Started →
+            </Link>
+            <Link
+              to="/about"
+              style={{
+                padding: "0.85rem 1.75rem",
+                borderRadius: "12px",
+                fontFamily: "'Roboto Serif', Georgia, serif",
+                fontWeight: 600,
+                fontSize: "1rem",
+                letterSpacing: "0.04em",
+                background: "transparent",
+                border: `1px solid ${tk.goldBorder}`,
+                color: tk.gold,
+                textDecoration: "none",
+                transition: "background .2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = tk.goldLight;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              Learn more
+            </Link>
           </div>
 
+          {/* Trust line */}
+          <p
+            className="hero-trust"
+            style={{
+              fontFamily: "'Roboto Serif', Georgia, serif",
+              fontSize: "0.85rem",
+              color: tk.textMuted,
+              fontWeight: 400,
+              margin: "0.5rem 0 0",
+            }}
+          >
+            Your document is never stored · Analysis happens in real time
+          </p>
+        </div>
+      </section>
+
+      {/* ─── Features Section ─────────────────────────────────── */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "2rem 1.5rem 4rem",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1000px",
+            margin: "0 auto",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "1.25rem",
+          }}
+        >
+          {FEATURES.map((f) => (
+            <div
+              key={f.title}
+              className="feat-card"
+              style={{
+                background: tk.surface,
+                border: `1px solid ${tk.surfaceBorder}`,
+                borderRadius: "16px",
+                padding: "1.5rem 1.5rem",
+                textAlign: "left",
+                transition: "transform .25s, border-color .25s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.borderColor = tk.goldBorder;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.borderColor = tk.surfaceBorder;
+              }}
+            >
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "10px",
+                  background: tk.goldLight,
+                  border: `1px solid ${tk.goldBorder}`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.2rem",
+                  marginBottom: "0.9rem",
+                }}
+              >
+                {f.icon}
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'DM Serif Display', Georgia, serif",
+                  fontSize: "1.1rem",
+                  fontWeight: 400,
+                  color: tk.textPrimary,
+                  margin: "0 0 0.35rem",
+                  letterSpacing: "0.01em",
+                }}
+              >
+                {f.title}
+              </h3>
+              <p
+                style={{
+                  fontFamily: "'Roboto Serif', Georgia, serif",
+                  fontSize: "0.9rem",
+                  color: tk.textSecondary,
+                  lineHeight: 1.55,
+                  margin: 0,
+                }}
+              >
+                {f.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── Waitlist Section ─────────────────────────────────── */}
+      <section
+        style={{
+          position: "relative",
+          zIndex: 1,
+          padding: "2rem 1.5rem 6rem",
+        }}
+      >
+        <div
+          className="waitlist-card"
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            margin: "0 auto",
+            background: tk.surface,
+            border: `1px solid ${tk.surfaceBorder}`,
+            borderRadius: "20px",
+            padding: "2.25rem",
+            boxShadow: tk.isDark
+              ? "0 20px 60px rgba(0,0,0,.35)"
+              : "0 10px 40px rgba(0,0,0,.06)",
+            textAlign: "left",
+          }}
+        >
+          <div style={{ marginBottom: "1.25rem" }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.375rem",
+                background: tk.goldLight,
+                border: `1px solid ${tk.goldBorder}`,
+                color: tk.gold,
+                fontFamily: "'Roboto Serif', Georgia, serif",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                padding: "0.2rem 0.75rem",
+                borderRadius: "999px",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                marginBottom: "0.6rem",
+              }}
+            >
+              <span
+                style={{
+                  width: "5px",
+                  height: "5px",
+                  borderRadius: "50%",
+                  backgroundColor: tk.success,
+                  animation: "pulse-dot 2s infinite",
+                  display: "inline-block",
+                }}
+              />
+              Early Access
+            </span>
+            <h2
+              style={{
+                fontFamily: "'DM Serif Display', Georgia, serif",
+                fontWeight: 400,
+                fontSize: "clamp(1.4rem, 3vw, 1.75rem)",
+                color: tk.textPrimary,
+                letterSpacing: "-0.01em",
+                margin: "0.5rem 0 0.375rem",
+              }}
+            >
+              Join the Waitlist
+            </h2>
+            <p
+              style={{
+                fontFamily: "'Roboto Serif', Georgia, serif",
+                color: tk.textSecondary,
+                fontSize: "0.95rem",
+                margin: 0,
+                lineHeight: 1.55,
+              }}
+            >
+              Tell us why you need Legal Ease AI — we review every request before granting access.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+            <input
+              name="full_name"
+              placeholder="Full Name *"
+              value={wForm.full_name}
+              onChange={handleWChange}
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = tk.gold)}
+              onBlur={(e) => (e.target.style.borderColor = tk.inputBorder)}
+            />
+            <input
+              name="email"
+              type="email"
+              placeholder="Email Address *"
+              value={wForm.email}
+              onChange={handleWChange}
+              style={inputStyle}
+              onFocus={(e) => (e.target.style.borderColor = tk.gold)}
+              onBlur={(e) => (e.target.style.borderColor = tk.inputBorder)}
+            />
+            <textarea
+              name="reason"
+              placeholder="Why do you want early access? (optional)"
+              value={wForm.reason}
+              onChange={handleWChange}
+              rows={3}
+              style={{ ...inputStyle, resize: "none", lineHeight: 1.6 }}
+              onFocus={(e) => (e.target.style.borderColor = tk.gold)}
+              onBlur={(e) => (e.target.style.borderColor = tk.inputBorder)}
+            />
+
+            {wStatus && (
+              <p
+                style={{
+                  fontFamily: "'Roboto Serif', Georgia, serif",
+                  fontSize: "0.9rem",
+                  color: wStatus === "success" ? tk.success : tk.danger,
+                  margin: 0,
+                  fontWeight: 500,
+                }}
+              >
+                {wMsg}
+              </p>
+            )}
+
+            <button
+              onClick={handleWSubmit}
+              disabled={wLoading}
+              style={{
+                width: "100%",
+                padding: "0.85rem",
+                borderRadius: "12px",
+                fontFamily: "'Roboto Serif', Georgia, serif",
+                fontWeight: 600,
+                fontSize: "1rem",
+                letterSpacing: "0.04em",
+                border: "none",
+                cursor: wLoading ? "not-allowed" : "pointer",
+                opacity: wLoading ? 0.6 : 1,
+                background: tk.btnBg,
+                color: tk.btnText,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.5rem",
+                transition: "opacity .25s",
+              }}
+              onMouseEnter={(e) =>
+                !wLoading && (e.currentTarget.style.opacity = "0.82")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.opacity = wLoading ? "0.6" : "1")
+              }
+            >
+              {wLoading ? (
+                <>
+                  <svg
+                    style={{
+                      animation: "spin 1s linear infinite",
+                      width: "15px",
+                      height: "15px",
+                    }}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      style={{ opacity: 0.25 }}
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      style={{ opacity: 0.75 }}
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8H4z"
+                    />
+                  </svg>
+                  Submitting…
+                </>
+              ) : (
+                "Join Waitlist →"
+              )}
+            </button>
+          </div>
         </div>
       </section>
     </main>

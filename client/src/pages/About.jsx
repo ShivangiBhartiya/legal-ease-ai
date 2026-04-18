@@ -73,7 +73,7 @@ export default function About() {
             }}>
               <span style={{ width:"5px", height:"5px", borderRadius:"50%", background:tk.gold, display:"block" }}/>
               <span style={{
-                fontFamily:"'Cormorant Garamond', Georgia, serif",
+                fontFamily:"'Roboto Serif', Georgia, serif",
                 fontSize:"0.7rem", letterSpacing:"0.15em",
                 textTransform:"uppercase", color:tk.gold,
                 fontWeight:600,
@@ -82,7 +82,7 @@ export default function About() {
 
             {/* H1 */}
             <h1 className="sr d1" style={{
-              fontFamily:"'Noto Serif', Georgia, serif",
+              fontFamily:"'DM Serif Display', Georgia, serif",
               fontWeight:700, color:tk.textPrimary,
               fontSize:"clamp(2.75rem, 6vw, 4.25rem)",
               lineHeight:1.05, letterSpacing:"-0.035em",
@@ -91,7 +91,7 @@ export default function About() {
 
             {/* Subtitle */}
             <p className="sr d2" style={{
-              fontFamily:"'Cormorant Garamond', Georgia, serif",
+              fontFamily:"'Roboto Serif', Georgia, serif",
               fontSize:"1.25rem", fontWeight:500, fontStyle:"italic",
               color:tk.textSecondary,
               maxWidth:"360px", lineHeight:1.65, margin:0,
@@ -125,19 +125,19 @@ export default function About() {
                 }}>
                   <span style={{ fontSize:"1.375rem", display:"block", marginBottom:"0.625rem" }}>{a.icon}</span>
                   <p style={{
-                    fontFamily:"'Noto Serif', Georgia, serif",
+                    fontFamily:"'DM Serif Display', Georgia, serif",
                     fontSize: a.value.length>4 ? "0.9375rem":"1.375rem",
                     fontWeight:700, color:tk.gold,
                     letterSpacing:"-0.02em", lineHeight:1.1, marginBottom:"0.3rem",
                   }}>{a.value}</p>
                   <p style={{
-                    fontFamily:"'Cormorant Garamond', Georgia, serif",
+                    fontFamily:"'Roboto Serif', Georgia, serif",
                     fontSize:"0.6875rem", textTransform:"uppercase",
                     letterSpacing:"0.09em", fontWeight:700,
                     color:tk.textSecondary, marginBottom:"0.5rem",
                   }}>{a.label}</p>
                   <p style={{
-                    fontFamily:"'Cormorant Garamond', Georgia, serif",
+                    fontFamily:"'Roboto Serif', Georgia, serif",
                     fontSize:"0.9375rem", color:tk.textSecondary, fontWeight:450, lineHeight:1.55,
                   }}>{a.desc}</p>
                 </div>
@@ -162,13 +162,13 @@ export default function About() {
                 <div style={{ display:"flex", alignItems:"center", gap:"0.625rem" }}>
                   <span style={{ width:"4px", height:"22px", borderRadius:"999px", background:tk.danger, display:"block" }}/>
                   <h2 style={{
-                    fontFamily:"'Noto Serif', Georgia, serif",
+                    fontFamily:"'DM Serif Display', Georgia, serif",
                     fontSize:"1rem", fontWeight:700,
                     color:tk.textPrimary, margin:0,
                   }}>The Problem</h2>
                 </div>
                 <p style={{
-                  fontFamily:"'Cormorant Garamond', Georgia, serif",
+                  fontFamily:"'Roboto Serif', Georgia, serif",
                   fontSize:"1.0625rem", color:tk.textSecondary, fontWeight:500, lineHeight:1.7, margin:0,
                 }}>
                   Most students and first-jobbers sign documents they've never truly understood.
@@ -178,7 +178,7 @@ export default function About() {
                   {problemItems.map(item=>(
                     <li key={item} style={{
                       display:"flex", alignItems:"flex-start", gap:"0.625rem",
-                      fontFamily:"'Cormorant Garamond', Georgia, serif",
+                      fontFamily:"'Roboto Serif', Georgia, serif",
                       fontSize:"1rem", color:tk.textSecondary, fontWeight:500,
                     }}>
                       <svg width="14" height="14" fill="none" stroke={tk.danger} viewBox="0 0 24 24" style={{marginTop:"3px",flexShrink:0}}>
@@ -197,13 +197,13 @@ export default function About() {
                 <div style={{ display:"flex", alignItems:"center", gap:"0.625rem" }}>
                   <span style={{ width:"4px", height:"22px", borderRadius:"999px", background:tk.success, display:"block" }}/>
                   <h2 style={{
-                    fontFamily:"'Noto Serif', Georgia, serif",
+                    fontFamily:"'DM Serif Display', Georgia, serif",
                     fontSize:"1rem", fontWeight:700,
                     color:tk.textPrimary, margin:0,
                   }}>Our Fix</h2>
                 </div>
                 <p style={{
-                  fontFamily:"'Cormorant Garamond', Georgia, serif",
+                  fontFamily:"'Roboto Serif', Georgia, serif",
                   fontSize:"1.0625rem", color:tk.textSecondary, fontWeight:500, lineHeight:1.7, margin:0,
                 }}>
                   Legal Ease AI translates legalese into plain English, flags risky clauses,
@@ -213,7 +213,7 @@ export default function About() {
                   {fixItems.map(item=>(
                     <li key={item} style={{
                       display:"flex", alignItems:"flex-start", gap:"0.625rem",
-                      fontFamily:"'Cormorant Garamond', Georgia, serif",
+                      fontFamily:"'Roboto Serif', Georgia, serif",
                       fontSize:"1rem", color:tk.textSecondary, fontWeight:500,
                     }}>
                       <svg width="14" height="14" fill="none" stroke={tk.success} viewBox="0 0 24 24" style={{marginTop:"3px",flexShrink:0}}>
@@ -228,7 +228,7 @@ export default function About() {
 
             {/* CTA */}
             <a className="sr d4" href="/" style={{
-              fontFamily:"'Cormorant Garamond', Georgia, serif",
+              fontFamily:"'Roboto Serif', Georgia, serif",
               fontSize:"1.0625rem", fontWeight:600,
               color:tk.gold,
               textDecoration:"none",

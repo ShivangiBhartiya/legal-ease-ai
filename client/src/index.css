@@ -8,13 +8,14 @@ body,
 }
 
 html {
-  background: #0e0e0f;
+  background: #0a0a0a; /* dark mode fallback; app div overrides with animated gradient */
 }
 
 body {
   min-height: 100vh;
-  background: #0e0e0f;
+  background: transparent;
   overflow-x: hidden;
+  font-family: 'Roboto Serif', Georgia, serif;
 }
 
 * {
