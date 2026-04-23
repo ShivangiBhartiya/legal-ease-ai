@@ -1,6 +1,7 @@
 import express from "express";
 import { query } from "../db/db.js";
 import { setUserApprovalByEmail } from "../models/userModel.js";
+import { requireAdmin, requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.post("/joinwaitlist", async (req, res) => {
   }
 });
 
-router.get("/waitlist", async (req, res) => {
+router.get("/waitlist", requireAdmin, async (req, res) => {
   try {
     const result = await query(
       "SELECT * FROM waitlist ORDER BY submitted_at DESC"
@@ -39,11 +40,11 @@ router.get("/waitlist", async (req, res) => {
   }
 });
 
-router.patch("/waitlist/:id/status", async (req, res) => {
+router.patch("/waitlist/:id/status", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!["approved", "denied", "pending"].includes(status)) {
+  if (!["approved", "rejected", "pending"].includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
 
@@ -65,7 +66,7 @@ router.patch("/waitlist/:id/status", async (req, res) => {
     const entry = result.rows[0];
     try {
       if (status === "approved") await setUserApprovalByEmail(entry.email, true);
-      else if (status === "denied") await setUserApprovalByEmail(entry.email, false);
+      else if (status === "rejected") await setUserApprovalByEmail(entry.email, false);
     } catch (syncErr) {
       console.error("User approval sync warning:", syncErr.message);
     }
@@ -73,6 +74,45 @@ router.patch("/waitlist/:id/status", async (req, res) => {
     res.json({ success: true, data: entry });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.post("/waitlist/claim-approved-access", requireAuth, async (req, res) => {
+  const email = req.authUser?.email;
+  const userId = req.authUser?.id;
+
+  if (!email || !userId) {
+    return res.status(400).json({ error: "Authenticated user details missing" });
+  }
+
+  try {
+    const waitlistRes = await query(
+      "SELECT status FROM waitlist WHERE LOWER(email) = LOWER($1) ORDER BY submitted_at DESC LIMIT 1",
+      [email]
+    );
+    const status = waitlistRes.rows[0]?.status;
+
+    if (status !== "approved") {
+      return res.json({ success: true, claimed: false, approved: false });
+    }
+
+    const userRes = await query(
+      `UPDATE users
+       SET approved = true
+       WHERE id = $1
+       RETURNING id, full_name, email, role, approved, created_at`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      claimed: true,
+      approved: true,
+      data: userRes.rows[0] || null,
+    });
+  } catch (err) {
+    console.error("claim-approved-access error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -138,13 +178,13 @@ router.get("/waitlist/status", async (req, res) => {
 });
 
 // PATCH /api/waitlist/bulk — approve or deny multiple entries at once
-router.patch("/waitlist/bulk", async (req, res) => {
+router.patch("/waitlist/bulk", requireAdmin, async (req, res) => {
   const { ids, status } = req.body;
   if (!Array.isArray(ids) || ids.length === 0) {
     return res.status(400).json({ error: "ids (array) is required" });
   }
-  if (!["approved", "denied"].includes(status)) {
-    return res.status(400).json({ error: "status must be approved or denied" });
+  if (!["approved", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "status must be approved or rejected" });
   }
 
   try {

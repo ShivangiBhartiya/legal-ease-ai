@@ -4,8 +4,8 @@ import { supabase } from "../lib/supabase";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);       // Supabase auth user
-  const [profile, setProfile] = useState(null); // public.users row
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId) => {
@@ -17,29 +17,46 @@ export function AuthProvider({ children }) {
     setProfile(data ?? null);
   };
 
+  const claimApprovedAccess = async (authUser) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!authUser || !token) return;
+
+    try {
+      await fetch("/api/waitlist/claim-approved-access", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch {
+      // Non-fatal. Access state will be refreshed from the profile query.
+    }
+  };
+
   useEffect(() => {
-    // Load existing session on mount
     supabase.auth.getSession().then(({ data: { session } }) => {
       const authUser = session?.user ?? null;
       setUser(authUser);
       if (authUser) {
-        fetchProfile(authUser.id).finally(() => setLoading(false));
+        claimApprovedAccess(authUser)
+          .catch(() => {})
+          .finally(() => fetchProfile(authUser.id).finally(() => setLoading(false)));
       } else {
         setLoading(false);
       }
     });
 
-    // React to auth state changes (login, logout, OAuth callback, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         const authUser = session?.user ?? null;
         setUser(authUser);
         if (authUser) {
-          // Clear stale profile + mark loading so route guards wait for fresh profile.
-          // Without this, AuthPages redirects to /waitlist before profile loads.
           setProfile(null);
           setLoading(true);
-          fetchProfile(authUser.id).finally(() => setLoading(false));
+          claimApprovedAccess(authUser)
+            .catch(() => {})
+            .finally(() => fetchProfile(authUser.id).finally(() => setLoading(false)));
         } else {
           setProfile(null);
           setLoading(false);
@@ -50,8 +67,6 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── Auth methods ────────────────────────────────────────────────────────────
-
   const signUp = async (email, password, fullName) => {
     const result = await supabase.auth.signUp({
       email,
@@ -59,20 +74,8 @@ export function AuthProvider({ children }) {
       options: { data: { full_name: fullName } },
     });
 
-    // If this email was already approved on the waitlist, auto-approve their new user row
     if (!result.error && result.data?.user) {
-      try {
-        const check = await fetch(`/api/waitlist/check?email=${encodeURIComponent(email)}`);
-        const data = await check.json();
-        if (data.approved) {
-          await supabase
-            .from("users")
-            .update({ approved: true })
-            .eq("id", result.data.user.id);
-        }
-      } catch {
-        // non-fatal — user just won't be auto-approved
-      }
+      await claimApprovedAccess(result.data.user);
     }
 
     return result;
@@ -98,7 +101,6 @@ export function AuthProvider({ children }) {
     setProfile(null);
   };
 
-  // Refresh profile from DB (called after admin approves a user)
   const refreshProfile = () => user && fetchProfile(user.id);
 
   return (

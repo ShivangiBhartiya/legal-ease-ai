@@ -131,7 +131,7 @@ export default function AuthPages() {
         setBusy(false);
         return setError("This email is not on the waitlist. Please join the waitlist from the home page first.");
       }
-      if (data.status === "denied") {
+      if (data.status === "rejected") {
         setBusy(false);
         return setError("Your waitlist request was declined. Please contact support.");
       }

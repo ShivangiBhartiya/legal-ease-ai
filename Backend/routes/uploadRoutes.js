@@ -3,6 +3,7 @@ import multer from "multer";
 import { uploadFile, analyzeText, translateExistingAnalysis, translateContent } from "../controllers/uploadController.js";
 import { compareDocuments } from "../controllers/compareController.js";
 import { generateDocument } from "../controllers/generateController.js";
+import { uploadsDir } from "../utils/uploads.js";
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const ALLOWED_EXT = [".pdf", ".docx", ".txt"];
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
+  destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
     const ext = file.originalname?.includes(".")
       ? file.originalname.slice(file.originalname.lastIndexOf(".")).toLowerCase()

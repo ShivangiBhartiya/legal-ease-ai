@@ -15,6 +15,9 @@ Backend/server-out.log
 Backend/server-err.log
 *.log
 
+# Uploaded files
+Backend/uploads/
+
 # OS files
 .DS_Store
 Thumbs.db

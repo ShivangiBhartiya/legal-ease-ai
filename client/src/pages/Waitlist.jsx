@@ -107,7 +107,7 @@ export default function Waitlist() {
   if (user) {
     const onList = wlInfo?.onWaitlist;
     const currentStatus = wlInfo?.status || "pending";
-    const isDenied = currentStatus === "denied";
+    const isDenied = currentStatus === "rejected";
     const position = wlInfo?.position;
     const submittedDate = wlInfo?.submittedAt ? new Date(wlInfo.submittedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" }) : null;
 

@@ -1,5 +1,6 @@
 import express from "express";
 import { getAllUsers, setUserApproval } from "../models/userModel.js";
+import { requireAdmin } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -7,7 +8,7 @@ const router = express.Router();
 // These admin endpoints are protected client-side via role check in ProtectedRoute.
 
 // GET /api/users — frontend role check handles access
-router.get("/users", async (req, res) => {
+router.get("/users", requireAdmin, async (req, res) => {
   try {
     const users = await getAllUsers();
     res.json({ success: true, data: users });
@@ -18,7 +19,7 @@ router.get("/users", async (req, res) => {
 });
 
 // PATCH /api/users/:id/approval — admin toggles dashboard access
-router.patch("/users/:id/approval", async (req, res) => {
+router.patch("/users/:id/approval", requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { approved } = req.body;
   if (typeof approved !== "boolean") {

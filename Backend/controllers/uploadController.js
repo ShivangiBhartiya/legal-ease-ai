@@ -1,10 +1,27 @@
 import fs from "fs";
 import path from "path";
-import { createRequire } from "module";
 import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
-const require = createRequire(import.meta.url);
-const pdfParse = require("pdf-parse");
+// Extract text from PDF buffer using pdfjs-dist
+async function extractPdfText(buffer) {
+  const uint8Array = new Uint8Array(buffer);
+  const loadingTask = pdfjsLib.getDocument({
+    data: uint8Array,
+    useWorkerFetch: false,
+    isEvalSupported: false,
+    useSystemFonts: true,
+  });
+  const pdf = await loadingTask.promise;
+  let fullText = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map((item) => item.str).join(" ");
+    fullText += pageText + "\n";
+  }
+  return fullText;
+}
 
 function parseAnalysisResponse(rawText) {
   try {
@@ -20,13 +37,17 @@ function parseAnalysisResponse(rawText) {
 }
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function getGeminiModels() {
   const primary = process.env.GEMINI_MODEL || "gemini-2.5-flash";
-  const fallbackModels = (process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash-lite")
-    .split(",").map(m => m.trim()).filter(Boolean);
+  const fallbackModels = (
+    process.env.GEMINI_FALLBACK_MODELS || "gemini-2.5-flash-lite"
+  )
+    .split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
   return [...new Set([primary, ...fallbackModels])];
 }
 
@@ -38,7 +59,10 @@ async function requestGeminiAnalysis(model, geminiApiKey, body) {
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": geminiApiKey,
+          },
           body,
           signal: AbortSignal.timeout(30000),
         }
@@ -50,7 +74,9 @@ async function requestGeminiAnalysis(model, geminiApiKey, body) {
       await sleep(1200 * attempt);
     }
   }
-  throw new Error(`Gemini request failed: ${lastError?.message || "network error"}`);
+  throw new Error(
+    `Gemini request failed: ${lastError?.message || "network error"}`
+  );
 }
 
 // STEP 1: Always analyze in English for consistent scoring
@@ -95,14 +121,18 @@ ${documentText.substring(0, 8000)}`;
     generationConfig: { temperature: 0.2, maxOutputTokens: 8192 },
   });
 
-  let lastModelError, lastStatus = 0;
+  let lastModelError,
+    lastStatus = 0;
 
   for (const model of models) {
     const response = await requestGeminiAnalysis(model, geminiApiKey, requestBody);
     if (response.ok) {
       const data = await response.json();
       const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const cleaned = rawText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const cleaned = rawText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
       return parseAnalysisResponse(cleaned);
     }
     const errText = await response.text();
@@ -111,25 +141,46 @@ ${documentText.substring(0, 8000)}`;
     if (response.status !== 503 && response.status !== 429) break;
   }
 
-  const isDailyQuota = /free_tier_requests|RESOURCE_EXHAUSTED|GenerateRequestsPerDay/i.test(lastModelError || "");
+  const isDailyQuota =
+    /free_tier_requests|RESOURCE_EXHAUSTED|GenerateRequestsPerDay/i.test(
+      lastModelError || ""
+    );
   if (lastStatus === 429 && isDailyQuota) {
-    const err = new Error("Daily AI quota exhausted. Please try again tomorrow or enable billing.");
-    err.status = 429; throw err;
+    const err = new Error(
+      "Daily AI quota exhausted. Please try again tomorrow or enable billing."
+    );
+    err.status = 429;
+    throw err;
   }
-  if (lastStatus === 429) { const err = new Error("Too many requests. Please wait a minute."); err.status = 429; throw err; }
-  if (lastStatus === 503) { const err = new Error("Gemini is temporarily overloaded. Please try again."); err.status = 503; throw err; }
+  if (lastStatus === 429) {
+    const err = new Error("Too many requests. Please wait a minute.");
+    err.status = 429;
+    throw err;
+  }
+  if (lastStatus === 503) {
+    const err = new Error("Gemini is temporarily overloaded. Please try again.");
+    err.status = 503;
+    throw err;
+  }
   throw new Error("Analysis service unavailable. Please try again.");
 }
 
 // STEP 2: Translate the English analysis into target language (score stays same)
 async function translateAnalysis(analysis, geminiApiKey, targetLang) {
-  if (targetLang === "en") return analysis; // no translation needed
+  if (targetLang === "en") return analysis;
 
   const languageNames = {
-    hi: "Hindi (हिन्दी)", bn: "Bengali (বাংলা)", te: "Telugu (తెలుగు)",
-    mr: "Marathi (मराठी)", ta: "Tamil (தமிழ்)", gu: "Gujarati (ગુજરાતી)",
-    kn: "Kannada (ಕನ್ನಡ)", ml: "Malayalam (മലയാളം)", pa: "Punjabi (ਪੰਜਾਬੀ)",
-    or: "Odia (ଓଡ଼ିଆ)", ur: "Urdu (اردو)",
+    hi: "Hindi (हिन्दी)",
+    bn: "Bengali (বাংলা)",
+    te: "Telugu (తెలుగు)",
+    mr: "Marathi (मराठी)",
+    ta: "Tamil (தமிழ்)",
+    gu: "Gujarati (ગુજراتী)",
+    kn: "Kannada (ಕನ್ನಡ)",
+    ml: "Malayalam (മലയാളം)",
+    pa: "Punjabi (ਪੰਜਾਬੀ)",
+    or: "Odia (ଓଡ଼ିଆ)",
+    ur: "Urdu (اردو)",
   };
   const langName = languageNames[targetLang] || "Hindi";
 
@@ -156,9 +207,11 @@ ${JSON.stringify(analysis)}`;
       if (response.ok) {
         const data = await response.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        const cleaned = rawText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const cleaned = rawText
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
+          .trim();
         const translated = parseAnalysisResponse(cleaned);
-        // Safety: always preserve the original numeric riskScore
         translated.riskScore = analysis.riskScore;
         return translated;
       }
@@ -166,7 +219,6 @@ ${JSON.stringify(analysis)}`;
       // If translation fails, return English version silently
     }
   }
-  // Fallback: return English if translation fails
   return analysis;
 }
 
@@ -176,14 +228,15 @@ export const uploadFile = async (req, res) => {
 
     const filePath = req.file.path;
     const geminiApiKey = process.env.GEMINI_API_KEY;
-    const extension = path.extname(req.file.originalname || filePath).toLowerCase();
+    const extension = path
+      .extname(req.file.originalname || filePath)
+      .toLowerCase();
     const responseLanguage = req.body.language || "en";
     let text = "";
 
     if (extension === ".pdf") {
       const dataBuffer = fs.readFileSync(filePath);
-      const result = await pdfParse(dataBuffer);
-      text = result.text;
+      text = await extractPdfText(dataBuffer);
     } else if (extension === ".txt") {
       text = fs.readFileSync(filePath, "utf8");
     } else if (extension === ".docx") {
@@ -193,20 +246,34 @@ export const uploadFile = async (req, res) => {
       return res.status(400).json({ error: "Supported formats: PDF, DOCX, TXT" });
     }
 
-    if (!geminiApiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured on server" });
-    if (!text.trim()) return res.status(400).json({ error: "Could not extract readable text from the uploaded file" });
+    if (!geminiApiKey)
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server" });
+    if (!text.trim())
+      return res.status(400).json({
+        error: "Could not extract readable text from the uploaded file",
+      });
 
-    // Always analyze in English first (consistent score), then translate
     const englishAnalysis = await analyzeInEnglish(text, geminiApiKey);
     const analysis = await translateAnalysis(englishAnalysis, geminiApiKey, responseLanguage);
 
-    res.json({ message: "File processed successfully", text: text.substring(0, 500), analysis, englishAnalysis });
+    res.json({
+      message: "File processed successfully",
+      text: text.substring(0, 500),
+      analysis,
+      englishAnalysis,
+    });
   } catch (error) {
     console.error("uploadFile error:", error);
     const status = error.status || 500;
-    res.status(status).json({ error: status === 500 ? "Error processing file: " + error.message : error.message });
+    res.status(status).json({
+      error:
+        status === 500
+          ? "Error processing file: " + error.message
+          : error.message,
+    });
   } finally {
-    if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    if (req.file?.path && fs.existsSync(req.file.path))
+      fs.unlinkSync(req.file.path);
   }
 };
 
@@ -215,8 +282,10 @@ export const analyzeText = async (req, res) => {
     const { text, language: responseLanguage = "en" } = req.body;
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    if (!text || text.trim().length < 50) return res.status(400).json({ error: "Please provide at least 50 characters of text" });
-    if (!geminiApiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured on server" });
+    if (!text || text.trim().length < 50)
+      return res.status(400).json({ error: "Please provide at least 50 characters of text" });
+    if (!geminiApiKey)
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured on server" });
 
     const englishAnalysis = await analyzeInEnglish(text, geminiApiKey);
     const analysis = await translateAnalysis(englishAnalysis, geminiApiKey, responseLanguage);
@@ -225,7 +294,12 @@ export const analyzeText = async (req, res) => {
   } catch (error) {
     console.error("analyzeText error:", error);
     const status = error.status || 500;
-    res.status(status).json({ error: status === 500 ? "Error analyzing text: " + error.message : error.message });
+    res.status(status).json({
+      error:
+        status === 500
+          ? "Error analyzing text: " + error.message
+          : error.message,
+    });
   }
 };
 
@@ -235,8 +309,10 @@ export const translateExistingAnalysis = async (req, res) => {
     const { analysis, language } = req.body;
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    if (!analysis || !language) return res.status(400).json({ error: "analysis and language required" });
-    if (!geminiApiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+    if (!analysis || !language)
+      return res.status(400).json({ error: "analysis and language required" });
+    if (!geminiApiKey)
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
     if (language === "en") return res.json({ analysis });
 
     const translated = await translateAnalysis(analysis, geminiApiKey, language);
@@ -253,15 +329,24 @@ export const translateContent = async (req, res) => {
     const { content, language } = req.body;
     const geminiApiKey = process.env.GEMINI_API_KEY;
 
-    if (!content || !language) return res.status(400).json({ error: "content and language required" });
-    if (!geminiApiKey) return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
+    if (!content || !language)
+      return res.status(400).json({ error: "content and language required" });
+    if (!geminiApiKey)
+      return res.status(500).json({ error: "GEMINI_API_KEY not configured" });
     if (language === "en") return res.json({ content });
 
     const LANGUAGE_NAMES = {
-      hi: "Hindi (हिन्दी)", bn: "Bengali (বাংলা)", te: "Telugu (తెలుగు)",
-      mr: "Marathi (मराठी)", ta: "Tamil (தமிழ்)", gu: "Gujarati (ગુજરાતી)",
-      kn: "Kannada (ಕನ್ನಡ)", ml: "Malayalam (മലയാളം)", pa: "Punjabi (ਪੰਜਾਬੀ)",
-      or: "Odia (ଓଡ଼ིଆ)", ur: "Urdu (اردو)",
+      hi: "Hindi (हिन्दी)",
+      bn: "Bengali (বাংলা)",
+      te: "Telugu (తెలుగు)",
+      mr: "Marathi (मराठी)",
+      ta: "Tamil (தமிழ்)",
+      gu: "Gujarati (ગુજरातী)",
+      kn: "Kannada (ಕನ್ನಡ)",
+      ml: "Malayalam (മലയാളം)",
+      pa: "Punjabi (ਪੰਜਾਬੀ)",
+      or: "Odia (ଓਡ਼ਿਆ)",
+      ur: "Urdu (اردو)",
     };
     const langName = LANGUAGE_NAMES[language] || "Hindi";
 
@@ -277,7 +362,10 @@ export const translateContent = async (req, res) => {
       if (response.ok) {
         const data = await response.json();
         const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        const cleaned = rawText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        const cleaned = rawText
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
+          .trim();
         return res.json({ content: JSON.parse(cleaned) });
       }
     }
