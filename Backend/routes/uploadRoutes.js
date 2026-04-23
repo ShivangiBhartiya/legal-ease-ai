@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { uploadFile, analyzeText } from "../controllers/uploadController.js";
+import { uploadFile, analyzeText, translateExistingAnalysis, translateContent } from "../controllers/uploadController.js";
 import { compareDocuments } from "../controllers/compareController.js";
 import { generateDocument } from "../controllers/generateController.js";
 
@@ -63,5 +63,8 @@ router.post("/upload", uploadSingle, uploadFile);
 router.post("/analyze-text", analyzeText);
 router.post("/compare", uploadPair, compareDocuments);
 router.post("/generate", generateDocument);
+
+router.post("/translate-analysis", translateExistingAnalysis);
+router.post("/translate-content", translateContent);
 
 export default router;
