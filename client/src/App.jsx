@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { LanguageProvider } from "./context/LanguageContext";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -468,11 +469,13 @@ export default function App() {
   };
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      <BrowserRouter>
-        <AuthProvider>
-          <AppShell />
-        </AuthProvider>
-      </BrowserRouter>
+      <LanguageProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </BrowserRouter>
+      </LanguageProvider>
     </ThemeContext.Provider>
   );
 }

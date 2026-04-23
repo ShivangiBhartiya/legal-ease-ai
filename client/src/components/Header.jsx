@@ -92,6 +92,7 @@ export default function Header() {
 
         {/* Right actions */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.625rem" }}>
+
           {/* Theme toggle — scenic pill */}
           <button
             onClick={toggleTheme}

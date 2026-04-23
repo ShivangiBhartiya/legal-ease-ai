@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTokens } from "../App";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import axios from "axios";
 
 function ThreatCard({ threat, level, tk }) {
@@ -326,20 +327,107 @@ function ComparisonResult({ comparison, tk }) {
   );
 }
 
+function LanguageSelector({ tk }) {
+  const { language, changeLanguage, languages } = useLanguage();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: "flex", alignItems: "center", gap: "0.4rem",
+          fontFamily: "'Roboto Serif', Georgia, serif",
+          fontSize: "0.8rem", fontWeight: 600,
+          background: tk.isDark ? "rgba(212,175,55,0.08)" : "rgba(212,175,55,0.06)",
+          border: `1px solid ${tk.goldBorder}`,
+          color: tk.gold, padding: "0.42rem 0.75rem",
+          borderRadius: "10px", cursor: "pointer", transition: "all 0.2s",
+          whiteSpace: "nowrap",
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = tk.isDark ? "rgba(212,175,55,0.15)" : "rgba(212,175,55,0.12)"; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = tk.isDark ? "rgba(212,175,55,0.08)" : "rgba(212,175,55,0.06)"; }}
+      >
+        🌐 {language.nativeLabel}
+        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
+          <path d="M1 3l4 4 4-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 6px)", right: 0,
+          background: tk.isDark ? "#111" : "#faf8f4",
+          border: `1px solid ${tk.surfaceBorder}`,
+          borderRadius: "12px", padding: "0.4rem",
+          boxShadow: "0 10px 28px rgba(0,0,0,0.2)",
+          minWidth: "170px", zIndex: 999,
+          maxHeight: "300px", overflowY: "auto",
+        }}>
+          {languages.map((lang) => {
+            const active = language.code === lang.code;
+            return (
+              <button
+                key={lang.code}
+                onClick={() => { changeLanguage(lang); setOpen(false); }}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  width: "100%", border: "none", padding: "0.45rem 0.7rem",
+                  borderRadius: "8px", cursor: "pointer", textAlign: "left",
+                  background: active ? (tk.isDark ? "rgba(212,175,55,0.12)" : "rgba(212,175,55,0.09)") : "transparent",
+                  color: active ? tk.gold : tk.textSecondary,
+                  transition: "background 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = tk.isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)"; }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              >
+                <span style={{ fontFamily: "system-ui, sans-serif", fontSize: "0.875rem" }}>{lang.nativeLabel}</span>
+                {active && <span style={{ fontSize: "0.7rem", opacity: 0.6 }}>✓</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const tk = useTokens();
   const navigate = useNavigate();
   const { user: authUser, profile } = useAuth();
+  const { language } = useLanguage();
   const [user, setUser] = useState(null);
   const [mode, setMode] = useState("file");
   const [file, setFile] = useState(null);
   const [textInput, setTextInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [translating, setTranslating] = useState(false);
   const [stage, setStage] = useState(null); // "uploading" | "analyzing"
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysis, setAnalysis] = useState(null);
+  const [englishAnalysis, setEnglishAnalysis] = useState(null); // always English base
   const [error, setError] = useState("");
   const fileInputRef = useRef();
+
+  // When language changes and we already have a result — translate without re-analyzing
+  useEffect(() => {
+    if (!englishAnalysis) return;
+    if (language.code === "en") { setAnalysis(englishAnalysis); return; }
+
+    setTranslating(true);
+    axios.post("/api/translate-analysis", { analysis: englishAnalysis, language: language.code })
+      .then(res => { if (res.data.analysis) setAnalysis(res.data.analysis); })
+      .catch(() => {}) // silently fail — keep current analysis
+      .finally(() => setTranslating(false));
+  }, [language.code]); // eslint-disable-line
 
   // Compare mode state
   const [fileA, setFileA] = useState(null);
@@ -388,6 +476,7 @@ export default function Dashboard() {
         if (vErr) { setError(vErr); setLoading(false); return; }
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("language", language.code);
         setStage("uploading");
         res = await axios.post("/api/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -402,14 +491,16 @@ export default function Dashboard() {
       } else {
         if (textInput.trim().length < 50) { setError("Please paste at least 50 characters of legal text."); setLoading(false); return; }
         setStage("analyzing");
-        res = await axios.post("/api/analyze-text", { text: textInput });
+        res = await axios.post("/api/analyze-text", { text: textInput, language: language.code });
       }
       if (res.data.analysis) {
         setAnalysis(res.data.analysis);
+        // Store the English base for instant language switching without re-analyzing
+        setEnglishAnalysis(res.data.englishAnalysis || res.data.analysis);
         // Save context for Juri to use in follow-up chat
         try {
           sessionStorage.setItem("juri-context", JSON.stringify({
-            analysis: res.data.analysis,
+            analysis: res.data.englishAnalysis || res.data.analysis,
             documentText: res.data.text || (mode === "text" ? textInput : ""),
           }));
         } catch {}
@@ -520,11 +611,15 @@ export default function Dashboard() {
       <div style={{ height: "1px", background: `linear-gradient(90deg, transparent, ${tk.gold}, transparent)`, marginBottom: "2.5rem" }} />
       <h2 style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: "1.25rem", fontWeight: 700, color: tk.textPrimary, margin: "0 0 1.25rem" }}>⚖️ Legal Document Analyzer</h2>
       <div style={{ ...cardStyle, marginBottom: "2rem" }}>
-        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-          {tabBtn("📄 Upload File", "file")}
-          {tabBtn("✍️ Paste Text", "text")}
-          {tabBtn("🔀 Compare", "compare")}
-          {tabBtn("✨ Generate", "generate")}
+        <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            {tabBtn("📄 Upload File", "file")}
+            {tabBtn("✍️ Paste Text", "text")}
+            {tabBtn("🔀 Compare", "compare")}
+            {tabBtn("✨ Generate", "generate")}
+          </div>
+          {/* Language Selector — only shown for analyze modes */}
+          {(mode === "file" || mode === "text") && <LanguageSelector tk={tk} />}
         </div>
         {mode === "file" && (
           <div>
@@ -628,6 +723,15 @@ export default function Dashboard() {
         )}
         <p style={{ fontSize: "0.75rem", color: tk.textMuted, textAlign: "center", margin: "0.75rem 0 0", fontStyle: "italic" }}>Powered by Google Gemini AI — threats color-coded by severity</p>
       </div>
+      {translating && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.85rem 1.25rem", borderRadius: "12px", background: tk.isDark ? "rgba(212,175,55,0.08)" : "rgba(212,175,55,0.06)", border: `1px solid ${tk.goldBorder}`, marginBottom: "1rem" }}>
+          <span style={{ fontSize: "1.2rem", animation: "spin 1s linear infinite" }}>🌐</span>
+          <span style={{ fontFamily: "'Roboto Serif', Georgia, serif", fontSize: "0.875rem", color: tk.gold }}>
+            Translating to {language.nativeLabel}...
+          </span>
+          <style>{`@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+        </div>
+      )}
       {analysis && <AnalysisResult analysis={analysis} tk={tk} />}
       {comparison && <ComparisonResult comparison={comparison} tk={tk} />}
       {genResult && (

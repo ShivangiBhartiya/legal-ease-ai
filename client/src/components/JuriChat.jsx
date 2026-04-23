@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useTokens } from "../App";
+import { useLanguage } from "../context/LanguageContext";
 
 export default function JuriChat({ onClose }) {
   const tk = useTokens();
+  const { language } = useLanguage();
   const [messages, setMessages] = useState([
     {
       role: "assistant",
@@ -48,6 +50,7 @@ export default function JuriChat({ onClose }) {
         message: text,
         history: messages.filter(m => m.role === "user" || m.role === "assistant"),
         context,
+        language: language.code,
       });
 
       setMessages(prev => [...prev, { role: "assistant", content: res.data.reply }]);
