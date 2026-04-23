@@ -3,6 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import uploadRoutes from "./routes/uploadRoutes.js";
+import waitlistRoutes from "./routes/waitlistRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import { initDB } from "./db/db.js";
 
 dotenv.config();
 
@@ -12,9 +16,14 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api", uploadRoutes);
+app.use("/api", waitlistRoutes);
+app.use("/api", userRoutes);
+app.use("/api", chatRoutes);
 
-const PORT = 5000;
+const PORT = 5001;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+initDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });
